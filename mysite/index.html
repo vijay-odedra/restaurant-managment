@@ -1,0 +1,5718 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QR Restaurant Ordering System</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"
+    />
+    <!-- QR Code library -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <!-- JSZip library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- jsPDF library for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <style>
+      /* All existing CSS styles remain the same */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      :root {
+        --primary-color: #2c3e50;
+        --secondary-color: #e74c3c;
+        --accent-color: #f39c12;
+        --light-color: #ecf0f1;
+        --dark-color: #2c3e50;
+        --success-color: #27ae60;
+        --warning-color: #f1c40f;
+        --kitchen-dark: #1a1a1a;
+        --kitchen-accent: #e67e22;
+        --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        --border-radius: 10px;
+      }
+
+      body {
+        background-color: #f9f9f9;
+        color: #333;
+        min-height: 100vh;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+        padding-bottom: 80px;
+      }
+
+      /* Header Styles */
+      .header {
+        background-color: var(--primary-color);
+        color: white;
+        padding: 20px;
+        border-radius: 0 0 var(--border-radius) var(--border-radius);
+        box-shadow: var(--shadow);
+        margin-bottom: 30px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .header::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: linear-gradient(
+          90deg,
+          var(--secondary-color),
+          var(--accent-color)
+        );
+      }
+
+      .header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+
+      .logo i {
+        font-size: 28px;
+        color: var(--accent-color);
+      }
+
+      .logo h1 {
+        font-size: 24px;
+        font-weight: 700;
+      }
+
+      .user-controls {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+      }
+
+      .table-info {
+        background-color: rgba(255, 255, 255, 0.1);
+        padding: 10px 20px;
+        border-radius: 50px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+        backdrop-filter: blur(5px);
+      }
+
+      .table-info i {
+        color: var(--accent-color);
+      }
+
+      /* Role Selector */
+      .role-selector {
+        position: relative;
+        display: inline-block;
+      }
+
+      .role-btn {
+        background-color: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: none;
+        padding: 8px 20px;
+        border-radius: 25px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s;
+      }
+
+      .role-btn:hover {
+        background-color: rgba(255, 255, 255, 0.3);
+      }
+
+      .role-dropdown {
+        display: none;
+        position: absolute;
+        top: 100%;
+        right: 0;
+        background-color: white;
+        min-width: 200px;
+        box-shadow: var(--shadow);
+        border-radius: var(--border-radius);
+        z-index: 1000;
+        margin-top: 5px;
+        overflow: hidden;
+      }
+
+      .role-dropdown.show {
+        display: block;
+      }
+
+      .role-option {
+        padding: 12px 20px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--dark-color);
+        transition: background-color 0.3s;
+        border-bottom: 1px solid #eee;
+      }
+
+      .role-option:last-child {
+        border-bottom: none;
+      }
+
+      .role-option:hover {
+        background-color: #f5f5f5;
+      }
+
+      .role-option i {
+        width: 20px;
+      }
+
+      .role-option.active {
+        background-color: var(--light-color);
+        color: var(--primary-color);
+        font-weight: 600;
+      }
+
+      /* Staff Navigation */
+      .staff-nav {
+        display: none;
+        position: fixed;
+        top: 100px;
+        right: 20px;
+        background-color: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+        z-index: 1001;
+        padding: 10px;
+        min-width: 200px;
+      }
+
+      .staff-nav.active {
+        display: block;
+      }
+
+      .staff-nav-item {
+        padding: 12px 15px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border-radius: 5px;
+        transition: background-color 0.3s;
+        color: var(--dark-color);
+      }
+
+      .staff-nav-item:hover {
+        background-color: #f5f5f5;
+      }
+
+      .staff-nav-item.active {
+        background-color: var(--light-color);
+        color: var(--primary-color);
+        font-weight: 600;
+      }
+
+      /* Enhanced Dashboard Page */
+      .dashboard-section {
+        margin-bottom: 40px;
+      }
+
+      .section-title {
+        font-size: 22px;
+        color: var(--primary-color);
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #eee;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .dashboard {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 25px;
+        margin-bottom: 40px;
+      }
+
+      .card {
+        background-color: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+        padding: 30px;
+        text-align: center;
+        transition: transform 0.3s, box-shadow 0.3s;
+        cursor: pointer;
+        border-top: 4px solid var(--primary-color);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        height: 100%;
+      }
+
+      .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+      }
+
+      .card-icon {
+        font-size: 48px;
+        color: var(--primary-color);
+        margin-bottom: 20px;
+        width: 80px;
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: rgba(52, 152, 219, 0.1);
+        border-radius: 50%;
+      }
+
+      .card h3 {
+        font-size: 22px;
+        margin-bottom: 15px;
+        color: var(--dark-color);
+      }
+
+      .card p {
+        color: #666;
+        line-height: 1.6;
+        margin-bottom: 20px;
+        flex-grow: 1;
+      }
+
+      .card-menu {
+        border-top-color: var(--secondary-color);
+      }
+
+      .card-menu .card-icon {
+        background-color: rgba(231, 76, 60, 0.1);
+        color: var(--secondary-color);
+      }
+
+      .card-orders {
+        border-top-color: var(--success-color);
+      }
+
+      .card-orders .card-icon {
+        background-color: rgba(39, 174, 96, 0.1);
+        color: var(--success-color);
+      }
+
+      .card-history {
+        border-top-color: var(--accent-color);
+      }
+
+      .card-history .card-icon {
+        background-color: rgba(243, 156, 18, 0.1);
+        color: var(--accent-color);
+      }
+
+      .card-kitchen {
+        border-top-color: #9b59b6;
+      }
+
+      .card-kitchen .card-icon {
+        background-color: rgba(155, 89, 182, 0.1);
+        color: #9b59b6;
+      }
+
+      .card-display {
+        border-top-color: #3498db;
+      }
+
+      .card-display .card-icon {
+        background-color: rgba(52, 152, 219, 0.1);
+        color: #3498db;
+      }
+
+      /* Quick Stats */
+      .quick-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 40px;
+      }
+
+      .stat-box {
+        background-color: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+        padding: 25px;
+        text-align: center;
+        border-left: 4px solid var(--accent-color);
+      }
+
+      .stat-value {
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin-bottom: 10px;
+      }
+
+      .stat-label {
+        color: #666;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      /* Recent Orders */
+      .recent-orders {
+        background-color: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+        padding: 30px;
+        margin-bottom: 40px;
+      }
+
+      .order-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+        border-bottom: 1px solid #eee;
+        transition: background-color 0.3s;
+        cursor: pointer;
+      }
+
+      .order-row:hover {
+        background-color: #f9f9f9;
+      }
+
+      .order-row:last-child {
+        border-bottom: none;
+      }
+
+      .order-token-small {
+        font-weight: 600;
+        color: var(--primary-color);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .order-status-small {
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .order-time-small {
+        color: #666;
+        font-size: 13px;
+      }
+
+      .status-placed {
+        background-color: #ffeaa7;
+        color: #e17055;
+      }
+
+      .status-preparing {
+        background-color: #a29bfe;
+        color: white;
+      }
+
+      .status-ready {
+        background-color: #55efc4;
+        color: #00b894;
+      }
+
+      .status-cancelled {
+        background-color: #dfe6e9;
+        color: #636e72;
+      }
+
+      .status-completed {
+        background-color: #81ecec;
+        color: #00cec9;
+      }
+
+      /* Orders Page */
+      .orders-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 25px;
+      }
+
+      .order-card {
+        background-color: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+        padding: 25px;
+        border-left: 5px solid var(--accent-color);
+      }
+
+      .order-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #eee;
+      }
+
+      .order-token {
+        background-color: var(--light-color);
+        padding: 8px 15px;
+        border-radius: 30px;
+        font-weight: 700;
+        color: var(--primary-color);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .order-status {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .order-time {
+        color: #666;
+        font-size: 14px;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .order-items {
+        margin-bottom: 20px;
+      }
+
+      .order-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        padding: 8px 0;
+        border-bottom: 1px solid #f5f5f5;
+      }
+
+      .order-item:last-child {
+        border-bottom: none;
+      }
+
+      .order-total {
+        font-weight: 700;
+        font-size: 18px;
+        display: flex;
+        justify-content: space-between;
+        padding-top: 15px;
+        border-top: 2px solid #eee;
+      }
+
+      .total-price {
+        color: var(--secondary-color);
+      }
+
+      .order-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+        flex-wrap: wrap;
+      }
+
+      .order-action-btn {
+        flex: 1;
+        min-width: 120px;
+        padding: 10px 15px;
+        border-radius: 5px;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        transition: all 0.3s;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .order-action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .print-btn {
+        background-color: #3498db;
+        color: white;
+      }
+
+      .bill-btn {
+        background-color: #9b59b6;
+        color: white;
+      }
+
+      .cancel-btn {
+        background-color: #e74c3c;
+        color: white;
+      }
+
+      .ready-btn {
+        background-color: var(--success-color);
+        color: white;
+      }
+
+      .view-btn {
+        background-color: var(--accent-color);
+        color: white;
+      }
+
+      .no-orders {
+        text-align: center;
+        padding: 50px 20px;
+        color: #666;
+        grid-column: 1 / -1;
+      }
+
+      .no-orders i {
+        font-size: 60px;
+        color: #ddd;
+        margin-bottom: 20px;
+      }
+
+      /* Enhanced Order History Page */
+      .history-page-container {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        gap: 25px;
+      }
+
+      .calendar-section {
+        background-color: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+        padding: 25px;
+        height: fit-content;
+      }
+
+      .calendar-section h3 {
+        color: var(--primary-color);
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .calendar-container {
+        margin-bottom: 25px;
+      }
+
+      .tables-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+        margin-top: 20px;
+      }
+
+      .table-card {
+        background-color: var(--light-color);
+        border-radius: 8px;
+        padding: 15px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        border: 2px solid transparent;
+      }
+
+      .table-card:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--shadow);
+      }
+
+      .table-card.active {
+        border-color: var(--accent-color);
+        background-color: rgba(243, 156, 18, 0.1);
+      }
+
+      .table-number {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin-bottom: 5px;
+      }
+
+      .table-orders-count {
+        font-size: 12px;
+        color: #666;
+        background-color: white;
+        padding: 3px 8px;
+        border-radius: 10px;
+        display: inline-block;
+      }
+
+      .history-details {
+        background-color: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+
+      .history-header {
+        background-color: var(--primary-color);
+        color: white;
+        padding: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .history-header h2 {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .history-stats {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+      }
+
+      .stat-badge {
+        background-color: rgba(255, 255, 255, 0.2);
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-size: 14px;
+      }
+
+      .history-list {
+        max-height: 600px;
+        overflow-y: auto;
+        padding: 0;
+      }
+
+      .history-item {
+        padding: 20px;
+        border-bottom: 1px solid #eee;
+        transition: background-color 0.3s;
+        cursor: pointer;
+      }
+
+      .history-item:hover {
+        background-color: #f9f9f9;
+      }
+
+      .history-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+      }
+
+      .history-token {
+        font-weight: 700;
+        color: var(--primary-color);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .history-table {
+        background-color: var(--light-color);
+        padding: 4px 12px;
+        border-radius: 15px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--dark-color);
+      }
+
+      .history-date {
+        color: #666;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      .history-items {
+        margin-bottom: 15px;
+      }
+
+      .history-item-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        padding: 5px 0;
+        border-bottom: 1px solid #f5f5f5;
+      }
+
+      .history-item-row:last-child {
+        border-bottom: none;
+      }
+
+      .history-total {
+        font-weight: 700;
+        display: flex;
+        justify-content: space-between;
+        padding-top: 15px;
+        border-top: 2px solid #eee;
+      }
+
+      /* Bill Modal */
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.7);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 2000;
+        padding: 20px;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s;
+      }
+
+      .modal-overlay.active {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .bill-modal {
+        background-color: white;
+        border-radius: var(--border-radius);
+        width: 100%;
+        max-width: 500px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      }
+
+      .bill-header {
+        background-color: var(--primary-color);
+        color: white;
+        padding: 25px;
+        border-radius: var(--border-radius) var(--border-radius) 0 0;
+        text-align: center;
+      }
+
+      .bill-header h3 {
+        font-size: 24px;
+        margin-bottom: 5px;
+      }
+
+      .restaurant-info {
+        font-size: 14px;
+        color: rgba(255, 255, 255, 0.8);
+        margin-bottom: 10px;
+      }
+
+      .bill-content {
+        padding: 30px;
+      }
+
+      .bill-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px dashed #eee;
+      }
+
+      .bill-row.total {
+        font-weight: 700;
+        font-size: 18px;
+        border-bottom: 2px solid var(--primary-color);
+        border-top: 2px solid #eee;
+        margin-top: 10px;
+      }
+
+      .bill-footer {
+        padding: 20px 30px;
+        background-color: #f9f9f9;
+        border-radius: 0 0 var(--border-radius) var(--border-radius);
+        text-align: center;
+      }
+
+      .bill-actions {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        margin-top: 20px;
+      }
+
+      .action-btn {
+        padding: 12px 25px;
+        border-radius: 5px;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .print-bill-btn {
+        background-color: var(--primary-color);
+        color: white;
+      }
+
+      .close-bill-btn {
+        background-color: #95a5a6;
+        color: white;
+      }
+
+      /* Kitchen Dashboard */
+      .kitchen-dashboard {
+        background-color: var(--kitchen-dark);
+        border-radius: var(--border-radius);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+        overflow: hidden;
+        color: white;
+      }
+
+      .kitchen-header {
+        background-color: #111;
+        padding: 25px;
+        border-bottom: 2px solid var(--kitchen-accent);
+      }
+
+      .kitchen-header h2 {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        font-size: 28px;
+        color: white;
+      }
+
+      .kitchen-header h2 i {
+        color: var(--kitchen-accent);
+      }
+
+      .kitchen-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+      }
+
+      .stat-card {
+        background-color: #2a2a2a;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+        border-top: 3px solid var(--kitchen-accent);
+      }
+
+      .stat-value {
+        font-size: 32px;
+        font-weight: 800;
+        color: var(--kitchen-accent);
+        margin: 10px 0;
+      }
+
+      .stat-label {
+        color: #aaa;
+        font-size: 14px;
+      }
+
+      /* Live Orders Display */
+      .live-orders-container {
+        padding: 25px;
+      }
+
+      .live-orders-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+        gap: 20px;
+      }
+
+      .live-order-card {
+        background: linear-gradient(135deg, #2a2a2a, #333);
+        border-radius: var(--border-radius);
+        padding: 20px;
+        border: 2px solid #444;
+        transition: all 0.3s;
+        animation: pulse 2s infinite;
+        cursor: pointer;
+      }
+
+      @keyframes pulse {
+        0% {
+          box-shadow: 0 0 0 0 rgba(230, 126, 34, 0.4);
+        }
+        70% {
+          box-shadow: 0 0 0 10px rgba(230, 126, 34, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(230, 126, 34, 0);
+        }
+      }
+
+      .live-order-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #444;
+      }
+
+      .live-order-token {
+        font-size: 22px;
+        font-weight: 800;
+        color: var(--kitchen-accent);
+        letter-spacing: 2px;
+      }
+
+      .live-order-time {
+        color: #aaa;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      .live-order-table {
+        background-color: rgba(230, 126, 34, 0.2);
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-weight: 600;
+        color: var(--kitchen-accent);
+      }
+
+      .live-order-items {
+        margin: 15px 0;
+      }
+
+      .live-order-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px;
+        background-color: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        margin-bottom: 8px;
+      }
+
+      .live-order-item-name {
+        font-weight: 600;
+        color: #fff;
+      }
+
+      .live-order-item-qty {
+        background-color: var(--kitchen-accent);
+        color: white;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .live-order-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #444;
+      }
+
+      .live-order-total {
+        font-size: 20px;
+        font-weight: 700;
+        color: #fff;
+      }
+
+      .live-order-actions {
+        display: flex;
+        gap: 10px;
+      }
+
+      .live-order-action-btn {
+        padding: 8px 15px;
+        border-radius: 5px;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        transition: all 0.3s;
+        font-size: 14px;
+      }
+
+      .live-order-action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+      }
+
+      .live-order-start-btn {
+        background-color: var(--kitchen-accent);
+        color: white;
+      }
+
+      .live-order-complete-btn {
+        background-color: var(--success-color);
+        color: white;
+      }
+
+      /* Kitchen Display Mode */
+      .kitchen-display-mode {
+        background-color: #000;
+        color: white;
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .display-header {
+        background: linear-gradient(135deg, #e67e22, #d35400);
+        padding: 20px;
+        border-radius: var(--border-radius);
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      .display-header h1 {
+        font-size: 36px;
+        margin-bottom: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 15px;
+      }
+
+      .display-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+      }
+
+      .display-order-card {
+        background: linear-gradient(135deg, #2c3e50, #34495e);
+        border-radius: var(--border-radius);
+        padding: 20px;
+        border: 2px solid #e67e22;
+        animation: glow 2s infinite alternate;
+        cursor: pointer;
+      }
+
+      @keyframes glow {
+        from {
+          box-shadow: 0 0 10px rgba(230, 126, 34, 0.5);
+        }
+        to {
+          box-shadow: 0 0 20px rgba(230, 126, 34, 0.8);
+        }
+      }
+
+      .display-order-token {
+        font-size: 24px;
+        font-weight: 800;
+        color: #e67e22;
+        text-align: center;
+        margin-bottom: 15px;
+        letter-spacing: 3px;
+      }
+
+      .display-order-table {
+        background-color: rgba(230, 126, 34, 0.3);
+        padding: 10px;
+        border-radius: var(--border-radius);
+        text-align: center;
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 15px;
+      }
+
+      .display-order-items {
+        background-color: rgba(255, 255, 255, 0.1);
+        padding: 15px;
+        border-radius: var(--border-radius);
+        margin-bottom: 15px;
+      }
+
+      .display-order-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .display-order-item:last-child {
+        border-bottom: none;
+      }
+
+      .display-order-time {
+        color: #aaa;
+        font-size: 14px;
+        text-align: center;
+        margin-top: 10px;
+      }
+
+      /* Page Container */
+      .page-container {
+        display: none;
+        animation: fadeIn 0.5s;
+      }
+
+      .page-container.active {
+        display: block;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Navigation Bar */
+      .nav-bar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background-color: white;
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+        display: flex;
+        justify-content: space-around;
+        padding: 12px 0;
+        z-index: 1000;
+      }
+
+      .nav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        cursor: pointer;
+        color: #777;
+        transition: color 0.3s;
+        flex: 1;
+        text-align: center;
+        padding: 8px 0;
+      }
+
+      .nav-item.active {
+        color: var(--primary-color);
+      }
+
+      .nav-item i {
+        font-size: 22px;
+      }
+
+      .nav-item span {
+        font-size: 13px;
+        font-weight: 500;
+      }
+
+      /* Notification */
+      .notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background-color: var(--success-color);
+        color: white;
+        padding: 15px 25px;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+        z-index: 3000;
+        transform: translateX(150%);
+        transition: transform 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .notification.show {
+        transform: translateX(0);
+      }
+
+      /* Data Management Panel */
+      .data-management {
+        background-color: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+        padding: 25px;
+        margin-top: 30px;
+      }
+
+      .data-management h3 {
+        color: var(--primary-color);
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .data-actions {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+      }
+
+      .data-action-btn {
+        padding: 12px 20px;
+        border-radius: 5px;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .data-action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .export-btn {
+        background-color: #27ae60;
+        color: white;
+      }
+
+      .import-btn {
+        background-color: #3498db;
+        color: white;
+      }
+
+      .clear-btn {
+        background-color: #e74c3c;
+        color: white;
+      }
+
+      .backup-btn {
+        background-color: #9b59b6;
+        color: white;
+      }
+
+      /* History Filter Controls */
+      .history-controls {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+
+      .filter-select {
+        padding: 10px 15px;
+        border-radius: 5px;
+        border: 1px solid #ddd;
+        background-color: white;
+        font-size: 14px;
+        min-width: 150px;
+      }
+
+      /* QR Code Styles */
+      .qr-section {
+        background-color: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+        padding: 25px;
+        margin-top: 30px;
+      }
+
+      .qr-section h3 {
+        color: var(--primary-color);
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .qr-controls {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+      }
+
+      .qr-input {
+        padding: 10px 15px;
+        border-radius: 5px;
+        border: 1px solid #ddd;
+        font-size: 14px;
+        min-width: 200px;
+        flex: 1;
+      }
+
+      .qr-generator-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+        margin-top: 20px;
+      }
+
+      .qr-canvas-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        justify-content: center;
+      }
+
+      .qr-canvas-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .qr-canvas-wrapper canvas {
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        padding: 10px;
+        background-color: white;
+      }
+
+      .table-label {
+        font-weight: 600;
+        color: var(--primary-color);
+        margin-bottom: 5px;
+      }
+
+      .qr-table-selector {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+
+      .qr-table-option {
+        padding: 10px;
+        border: 2px solid #ddd;
+        border-radius: 5px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+
+      .qr-table-option:hover {
+        border-color: var(--primary-color);
+        background-color: rgba(52, 152, 219, 0.1);
+      }
+
+      .qr-table-option.selected {
+        border-color: var(--success-color);
+        background-color: rgba(39, 174, 96, 0.1);
+        font-weight: bold;
+      }
+
+      /* Menu Items Grid */
+      .menu-items-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 20px;
+        margin-top: 30px;
+      }
+
+      .menu-item-card {
+        background-color: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+        padding: 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: transform 0.3s;
+      }
+
+      .menu-item-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+      }
+
+      .menu-item-img {
+        width: 100%;
+        height: 120px;
+        background-color: #f5f5f5;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ddd;
+        overflow: hidden;
+      }
+
+      .menu-item-img img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .menu-item-price {
+        color: var(--secondary-color);
+        font-weight: bold;
+        font-size: 18px;
+        margin-top: 10px;
+      }
+
+      /* Enhanced Menu Order Sync Banner */
+      .menu-sync-banner {
+        background: linear-gradient(135deg, #27ae60, #2ecc71);
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        animation: slideIn 0.5s ease-out;
+      }
+
+      @keyframes slideIn {
+        from {
+          transform: translateY(-20px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      .menu-sync-banner i {
+        font-size: 22px;
+      }
+
+      .sync-refresh-btn {
+        margin-left: auto;
+        background: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        padding: 6px 15px;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        transition: all 0.3s;
+      }
+
+      .sync-refresh-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+      }
+
+      /* NEW: PDF Export Button Styles */
+      .pdf-export-section {
+        background-color: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+        padding: 25px;
+        margin-top: 20px;
+      }
+
+      .pdf-export-section h3 {
+        color: var(--primary-color);
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .pdf-controls {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+      }
+
+      .pdf-date-range {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .pdf-date-input {
+        padding: 10px 15px;
+        border-radius: 5px;
+        border: 1px solid #ddd;
+        font-size: 14px;
+        min-width: 150px;
+      }
+
+      .pdf-options {
+        display: flex;
+        gap: 15px;
+        margin-top: 15px;
+        flex-wrap: wrap;
+      }
+
+      .pdf-option-label {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 14px;
+      }
+
+      /* Responsive */
+      @media (max-width: 1024px) {
+        .history-page-container {
+          grid-template-columns: 1fr;
+        }
+        .calendar-section {
+          order: 2;
+        }
+        .history-details {
+          order: 1;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .header-content {
+          flex-direction: column;
+          gap: 15px;
+          text-align: center;
+        }
+        .user-controls {
+          width: 100%;
+          justify-content: center;
+          flex-wrap: wrap;
+        }
+        .orders-container,
+        .live-orders-grid,
+        .dashboard,
+        .menu-items-grid {
+          grid-template-columns: 1fr;
+        }
+        .tables-grid {
+          grid-template-columns: repeat(3, 1fr);
+        }
+        .kitchen-stats,
+        .quick-stats {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .data-actions {
+          flex-direction: column;
+        }
+        .history-controls {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        .qr-controls {
+          flex-direction: column;
+        }
+        .qr-input {
+          min-width: 100%;
+        }
+        .pdf-controls {
+          flex-direction: column;
+        }
+        .pdf-date-range {
+          flex-direction: column;
+          align-items: stretch;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .tables-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .kitchen-stats,
+        .quick-stats {
+          grid-template-columns: 1fr;
+        }
+        .bill-actions,
+        .quick-order-actions {
+          flex-direction: column;
+        }
+        .order-action-btn {
+          min-width: 100px;
+        }
+        .qr-table-selector {
+          grid-template-columns: repeat(3, 1fr);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Header -->
+    <div class="header">
+      <div class="container">
+        <div class="header-content">
+          <div class="logo">
+            <i class="fas fa-utensils"></i>
+            <h1 id="restaurant-title">QR Restaurant Ordering</h1>
+          </div>
+          <div class="user-controls">
+            <div class="table-info" id="customer-info">
+              <i class="fas fa-table"></i>
+              <span>Table: <span id="table-number">05</span></span>
+            </div>
+            <div class="role-selector">
+              <button class="role-btn" id="role-toggle">
+                <i class="fas fa-user-shield"></i>
+                <span id="current-role">Customer</span>
+                <i class="fas fa-chevron-down"></i>
+              </button>
+              <div class="role-dropdown" id="role-dropdown">
+                <div class="role-option active" data-role="customer">
+                  <i class="fas fa-user"></i> Customer
+                </div>
+                <div class="role-option" data-role="kitchen">
+                  <i class="fas fa-utensils"></i> Kitchen Staff
+                </div>
+                <div class="role-option" data-role="display">
+                  <i class="fas fa-tv"></i> Display Mode
+                </div>
+                <div class="role-option" data-role="admin">
+                  <i class="fas fa-cog"></i> Admin
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Staff Navigation -->
+    <div class="staff-nav" id="staff-nav">
+      <div class="staff-nav-item" data-page="dashboard">
+        <i class="fas fa-home"></i> Dashboard
+      </div>
+      <div class="staff-nav-item" data-page="kitchen">
+        <i class="fas fa-utensils"></i> Kitchen Orders
+      </div>
+      <div class="staff-nav-item" data-page="display">
+        <i class="fas fa-tv"></i> Display Mode
+      </div>
+      <div class="staff-nav-item" data-page="history">
+        <i class="fas fa-history"></i> History
+      </div>
+      <div class="staff-nav-item" data-page="admin">
+        <i class="fas fa-cog"></i> Admin
+      </div>
+    </div>
+
+    <!-- Notification -->
+    <div class="notification" id="notification">
+      <i class="fas fa-check-circle"></i>
+      <span id="notification-text">Order placed successfully!</span>
+    </div>
+
+    <!-- Page Container -->
+    <div class="container">
+      <!-- Dashboard Page (Customer) -->
+      <div id="dashboard-page" class="page-container active">
+        <!-- Menu Order Sync Banner -->
+        <div
+          class="menu-sync-banner"
+          id="menu-sync-banner"
+          style="display: none"
+        >
+          <i class="fas fa-sync-alt fa-spin"></i>
+          <div>
+            <strong>Menu Orders Synced!</strong>
+            <div style="font-size: 13px; opacity: 0.9" id="sync-message">
+              New orders detected from menu
+            </div>
+          </div>
+          <button
+            class="sync-refresh-btn"
+            onclick="RestaurantSystem.forceSyncMenuOrders()"
+          >
+            <i class="fas fa-redo"></i> Refresh
+          </button>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="quick-stats">
+          <div class="stat-box">
+            <div class="stat-value" id="dashboard-active-orders">0</div>
+            <div class="stat-label">Active Orders</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value" id="dashboard-today-orders">0</div>
+            <div class="stat-label">Today's Orders</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value" id="dashboard-total-revenue">$0.00</div>
+            <div class="stat-label">Total Revenue</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value" id="dashboard-ready-orders">0</div>
+            <div class="stat-label">Ready to Serve</div>
+          </div>
+        </div>
+
+        <!-- Main Dashboard Cards -->
+        <div class="dashboard-section">
+          <h2 class="section-title">
+            <i class="fas fa-tachometer-alt"></i> Main Menu
+          </h2>
+          <div class="dashboard">
+            <div class="card card-menu" id="menu-card">
+              <div class="card-icon">
+                <i class="fas fa-book-open"></i>
+              </div>
+              <h3>Show Menu</h3>
+              <p>Browse our delicious food menu and place your order</p>
+              <button
+                class="order-action-btn view-btn"
+                style="margin-top: auto"
+              >
+                <i class="fas fa-arrow-right"></i> Go to Menu
+              </button>
+            </div>
+
+            <div class="card card-orders" id="my-orders-btn">
+              <div class="card-icon">
+                <i class="fas fa-clipboard-list"></i>
+              </div>
+              <h3>My Orders</h3>
+              <p>View your current order status and details</p>
+              <button
+                class="order-action-btn view-btn"
+                style="margin-top: auto"
+              >
+                <i class="fas fa-arrow-right"></i> View Orders
+              </button>
+            </div>
+
+            <div class="card card-history" id="order-history-btn">
+              <div class="card-icon">
+                <i class="fas fa-history"></i>
+              </div>
+              <h3>Order History</h3>
+              <p>Check all your previous orders from this session</p>
+              <button
+                class="order-action-btn view-btn"
+                style="margin-top: auto"
+              >
+                <i class="fas fa-arrow-right"></i> View History
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Kitchen & Display Access -->
+        <div class="dashboard-section">
+          <h2 class="section-title">
+            <i class="fas fa-cogs"></i> Staff Access
+          </h2>
+          <div class="dashboard">
+            <div class="card card-kitchen" id="kitchen-access-btn">
+              <div class="card-icon">
+                <i class="fas fa-utensils"></i>
+              </div>
+              <h3>Kitchen Dashboard</h3>
+              <p>Manage and monitor all kitchen orders in real-time</p>
+              <button
+                class="order-action-btn view-btn"
+                style="margin-top: auto; background-color: #9b59b6"
+              >
+                <i class="fas fa-arrow-right"></i> Go to Kitchen
+              </button>
+            </div>
+
+            <div class="card card-display" id="display-access-btn">
+              <div class="card-icon">
+                <i class="fas fa-tv"></i>
+              </div>
+              <h3>Display Mode</h3>
+              <p>Large screen display for kitchen order monitoring</p>
+              <button
+                class="order-action-btn view-btn"
+                style="margin-top: auto; background-color: #3498db"
+              >
+                <i class="fas fa-arrow-right"></i> Go to Display
+              </button>
+            </div>
+
+            <div class="card" id="admin-access-btn">
+              <div class="card-icon">
+                <i class="fas fa-cog"></i>
+              </div>
+              <h3>Admin Panel</h3>
+              <p>Access system settings and management tools</p>
+              <button
+                class="order-action-btn view-btn"
+                style="margin-top: auto; background-color: #2c3e50"
+                onclick="RestaurantSystem.switchRole('admin')"
+              >
+                <i class="fas fa-arrow-right"></i> Go to Admin
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Orders -->
+        <div class="recent-orders">
+          <h2 class="section-title">
+            <i class="fas fa-clock"></i> Recent Orders
+          </h2>
+          <div id="recent-orders-list">
+            <!-- Recent orders will be dynamically loaded here -->
+          </div>
+        </div>
+
+        <!-- Data Management (Admin Only) -->
+        <div
+          class="data-management"
+          id="data-management-section"
+          style="display: none"
+        >
+          <h3><i class="fas fa-database"></i> Data Management</h3>
+          <div class="data-actions">
+            <button class="data-action-btn export-btn" id="export-data-btn">
+              <i class="fas fa-file-export"></i> Export All Data
+            </button>
+            <button class="data-action-btn import-btn" id="import-data-btn">
+              <i class="fas fa-file-import"></i> Import Data
+            </button>
+            <button class="data-action-btn clear-btn" id="clear-history-btn">
+              <i class="fas fa-trash"></i> Clear Old History (30+ days)
+            </button>
+            <button class="data-action-btn backup-btn" id="backup-data-btn">
+              <i class="fas fa-save"></i> Backup to Cloud
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- My Orders Page (Customer) -->
+      <div id="orders-page" class="page-container">
+        <h2
+          style="
+            margin-bottom: 25px;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+          "
+        >
+          <i class="fas fa-clipboard-list"></i> My Orders
+        </h2>
+
+        <!-- Menu Sync Banner for Orders Page -->
+        <div
+          class="menu-sync-banner"
+          id="orders-sync-banner"
+          style="display: none; margin-bottom: 20px"
+        >
+          <i class="fas fa-sync-alt"></i>
+          <div>
+            <strong>Orders from Menu</strong>
+            <div style="font-size: 13px; opacity: 0.9" id="orders-sync-message">
+              Your menu orders are displayed below
+            </div>
+          </div>
+        </div>
+
+        <div class="orders-container" id="orders-container">
+          <!-- Current orders will be dynamically loaded here -->
+        </div>
+      </div>
+
+      <!-- Order History Page (Customer) -->
+      <div id="history-page" class="page-container">
+        <div class="history-page-container">
+          <div class="calendar-section">
+            <h3><i class="fas fa-calendar-alt"></i> Calendar</h3>
+            <div class="calendar-container">
+              <input
+                type="text"
+                id="calendar-picker"
+                placeholder="Select Date"
+                style="
+                  width: 100%;
+                  padding: 10px;
+                  border: 1px solid #ddd;
+                  border-radius: 5px;
+                  margin-bottom: 20px;
+                "
+              />
+            </div>
+            <h3><i class="fas fa-chair"></i> Tables</h3>
+            <div class="tables-grid" id="tables-grid">
+              <!-- Tables will be dynamically loaded here -->
+            </div>
+            <div class="data-management" style="margin-top: 20px">
+              <h3><i class="fas fa-history"></i> History Management</h3>
+              <div class="data-actions">
+                <button
+                  class="data-action-btn export-btn"
+                  id="export-history-json"
+                >
+                  <i class="fas fa-file-export"></i> Export History (JSON)
+                </button>
+                <button
+                  class="data-action-btn import-btn"
+                  id="import-history-json"
+                >
+                  <i class="fas fa-file-import"></i> Import History
+                </button>
+              </div>
+            </div>
+            <!-- NEW: PDF Export Section -->
+            <div class="pdf-export-section" style="margin-top: 20px">
+              <h3><i class="fas fa-file-pdf"></i> Export to PDF</h3>
+              <div class="pdf-controls">
+                <div class="pdf-date-range">
+                  <input
+                    type="date"
+                    id="pdf-start-date"
+                    class="pdf-date-input"
+                    value=""
+                  />
+                  <span>to</span>
+                  <input
+                    type="date"
+                    id="pdf-end-date"
+                    class="pdf-date-input"
+                    value=""
+                  />
+                </div>
+                <button
+                  class="data-action-btn export-btn"
+                  id="export-pdf-btn"
+                  style="background-color: #e74c3c"
+                >
+                  <i class="fas fa-file-pdf"></i> Export to PDF
+                </button>
+                <button
+                  class="data-action-btn import-btn"
+                  id="export-detailed-pdf-btn"
+                  style="background-color: #9b59b6"
+                >
+                  <i class="fas fa-file-alt"></i> Detailed PDF Report
+                </button>
+              </div>
+              <div class="pdf-options">
+                <label class="pdf-option-label">
+                  <input type="checkbox" id="include-summary" checked />
+                  Include Summary
+                </label>
+                <label class="pdf-option-label">
+                  <input type="checkbox" id="include-charts" checked />
+                  Include Charts
+                </label>
+                <label class="pdf-option-label">
+                  <input type="checkbox" id="group-by-table" />
+                  Group by Table
+                </label>
+                <label class="pdf-option-label">
+                  <input type="checkbox" id="include-all-details" />
+                  Include All Details
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="history-details">
+            <div class="history-header">
+              <h2><i class="fas fa-history"></i> Order History</h2>
+              <div class="history-stats">
+                <div class="stat-badge" id="selected-date">Today</div>
+                <div class="stat-badge" id="selected-table">All Tables</div>
+                <div class="stat-badge" id="history-count">0 Orders</div>
+              </div>
+            </div>
+            <div class="history-controls">
+              <select class="filter-select" id="history-filter-status">
+                <option value="all">All Status</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+                <option value="ready">Ready</option>
+                <option value="preparing">Preparing</option>
+                <option value="order placed">Order Placed</option>
+              </select>
+              <select class="filter-select" id="history-filter-time">
+                <option value="all">All Time</option>
+                <option value="today">Today</option>
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+                <option value="year">This Year</option>
+              </select>
+              <input
+                type="number"
+                class="filter-select"
+                id="history-min-total"
+                placeholder="Min Total $"
+                style="min-width: 120px"
+              />
+              <input
+                type="number"
+                class="filter-select"
+                id="history-max-total"
+                placeholder="Max Total $"
+                style="min-width: 120px"
+              />
+            </div>
+            <div class="history-list" id="history-list">
+              <!-- Order history will be dynamically loaded here -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kitchen Dashboard -->
+      <div id="kitchen-page" class="page-container">
+        <div class="kitchen-dashboard">
+          <div class="kitchen-header">
+            <h2><i class="fas fa-utensils"></i> Kitchen Dashboard</h2>
+            <div class="kitchen-stats">
+              <div class="stat-card">
+                <div class="stat-label">Active Orders</div>
+                <div class="stat-value" id="active-orders-count">0</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Preparing</div>
+                <div class="stat-value" id="preparing-orders-count">0</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Ready to Serve</div>
+                <div class="stat-value" id="ready-orders-count">0</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Today's Revenue</div>
+                <div class="stat-value" id="today-revenue">$0.00</div>
+              </div>
+            </div>
+          </div>
+          <div class="live-orders-container">
+            <h3 style="color: white; margin-bottom: 20px; font-size: 22px">
+              <i class="fas fa-fire"></i> Live Orders Display
+            </h3>
+            <div
+              class="history-controls"
+              style="
+                background: rgba(255, 255, 255, 0.1);
+                padding: 15px;
+                border-radius: 8px;
+                margin-bottom: 20px;
+              "
+            >
+              <select class="filter-select" id="kitchen-filter-table">
+                <option value="all">All Tables</option>
+                <!-- Tables will be dynamically added -->
+              </select>
+              <select class="filter-select" id="kitchen-filter-status">
+                <option value="active">Active Orders</option>
+                <option value="preparing">Preparing</option>
+                <option value="ready">Ready</option>
+              </select>
+            </div>
+            <div class="live-orders-grid" id="live-orders-grid">
+              <!-- Live orders will be dynamically loaded here -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kitchen Display Mode -->
+      <div id="display-page" class="page-container">
+        <div class="kitchen-display-mode">
+          <div class="display-header">
+            <h1><i class="fas fa-tv"></i> Kitchen Display System</h1>
+            <p>Live Orders - Auto Refresh Every 10 Seconds</p>
+          </div>
+          <div class="display-grid" id="display-orders-grid">
+            <!-- Display orders will be dynamically loaded here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Admin Page -->
+      <div id="admin-page" class="page-container">
+        <h2
+          style="
+            margin-bottom: 25px;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+          "
+        >
+          <i class="fas fa-cog"></i> Admin Dashboard
+        </h2>
+
+        <div class="dashboard-section">
+          <h2 class="section-title">
+            <i class="fas fa-chart-bar"></i> Statistics
+          </h2>
+          <div class="quick-stats">
+            <div class="stat-box">
+              <div class="stat-value" id="admin-total-orders">0</div>
+              <div class="stat-label">Total Orders (All Time)</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-value" id="admin-total-revenue">$0.00</div>
+              <div class="stat-label">Total Revenue (All Time)</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-value" id="admin-avg-order">$0.00</div>
+              <div class="stat-label">Average Order Value</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-value" id="admin-most-active-table">-</div>
+              <div class="stat-label">Most Active Table</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-section">
+          <h2 class="section-title">
+            <i class="fas fa-database"></i> Data Management
+          </h2>
+          <div class="dashboard">
+            <div class="card">
+              <div class="card-icon">
+                <i class="fas fa-file-export"></i>
+              </div>
+              <h3>Export Data</h3>
+              <p>Export all order history and system data to CSV/JSON</p>
+              <button
+                class="order-action-btn view-btn"
+                style="margin-top: auto; background-color: #27ae60"
+                id="admin-export-all"
+              >
+                <i class="fas fa-download"></i> Export All Data
+              </button>
+            </div>
+
+            <div class="card">
+              <div class="card-icon">
+                <i class="fas fa-file-import"></i>
+              </div>
+              <h3>Import Data</h3>
+              <p>Import order data from external files</p>
+              <input
+                type="file"
+                id="import-file"
+                accept=".json,.csv"
+                style="display: none"
+              />
+              <button
+                class="order-action-btn view-btn"
+                style="margin-top: auto; background-color: #3498db"
+                id="admin-import-data"
+              >
+                <i class="fas fa-upload"></i> Import Data
+              </button>
+            </div>
+
+            <div class="card">
+              <div class="card-icon">
+                <i class="fas fa-trash"></i>
+              </div>
+              <h3>Cleanup Data</h3>
+              <p>Remove old data and optimize storage</p>
+              <button
+                class="order-action-btn view-btn"
+                style="margin-top: auto; background-color: #e74c3c"
+                id="admin-cleanup-data"
+              >
+                <i class="fas fa-broom"></i> Cleanup Old Data
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- QR Code Generator Section -->
+        <div class="qr-section" id="qr-section">
+          <h3><i class="fas fa-qrcode"></i> QR Code Generator</h3>
+          <div class="qr-controls">
+            <input
+              type="text"
+              id="qr-base-url"
+              class="qr-input"
+              placeholder="Base URL (e.g., https://yourdomain.com/menu.html)"
+              value=""
+            />
+            <button class="data-action-btn export-btn" id="generate-qr-btn">
+              <i class="fas fa-qrcode"></i> Generate QR Codes
+            </button>
+            <button class="data-action-btn import-btn" id="download-all-qr-btn">
+              <i class="fas fa-download"></i> Download All QR Codes
+            </button>
+          </div>
+
+          <div class="qr-table-selector" id="qr-table-selector">
+            <!-- Table options will be dynamically generated -->
+          </div>
+
+          <div class="qr-generator-container" id="qr-generator-container">
+            <!-- QR codes will be generated here -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bill Modal -->
+    <div class="modal-overlay" id="bill-modal">
+      <div class="bill-modal">
+        <div class="bill-header">
+          <h3>INVOICE</h3>
+          <div class="restaurant-info">QR Restaurant Ordering System</div>
+          <div class="restaurant-info">123 Food Street, City</div>
+        </div>
+        <div class="bill-content" id="bill-content">
+          <!-- Bill content will be dynamically loaded here -->
+        </div>
+        <div class="bill-footer">
+          <div>Thank you for dining with us!</div>
+          <div class="bill-actions">
+            <button class="action-btn print-bill-btn" id="print-bill-btn">
+              <i class="fas fa-print"></i> Print Bill
+            </button>
+            <button class="action-btn close-bill-btn" id="close-bill-btn">
+              <i class="fas fa-times"></i> Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Order Details Modal for Kitchen -->
+    <div class="modal-overlay" id="order-details-modal">
+      <div class="bill-modal order-details-modal">
+        <div class="bill-header">
+          <h3>ORDER DETAILS</h3>
+          <div class="restaurant-info">Kitchen View</div>
+        </div>
+        <div class="bill-content" id="order-details-content">
+          <!-- Order details will be dynamically loaded here -->
+        </div>
+        <div class="bill-footer">
+          <div class="bill-actions">
+            <button
+              class="action-btn print-bill-btn"
+              id="print-order-details-btn"
+            >
+              <i class="fas fa-print"></i> Print
+            </button>
+            <button
+              class="action-btn close-bill-btn"
+              id="close-order-details-btn"
+            >
+              <i class="fas fa-times"></i> Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Bar -->
+    <div class="nav-bar" id="customer-nav">
+      <div class="nav-item active" id="nav-dashboard">
+        <i class="fas fa-home"></i>
+        <span>Dashboard</span>
+      </div>
+      <div class="nav-item" id="nav-menu-card">
+        <i class="fas fa-book-open"></i>
+        <span>Menu</span>
+      </div>
+      <div class="nav-item" id="nav-orders">
+        <i class="fas fa-clipboard-list"></i>
+        <span>My Orders</span>
+      </div>
+      <div class="nav-item" id="nav-history">
+        <i class="fas fa-history"></i>
+        <span>History</span>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script>
+      // Enhanced Restaurant System with PDF Export
+      const RestaurantSystem = {
+        currentUserRole: "customer",
+        currentTable: "05",
+        allOrders: [],
+        allHistory: [],
+        allTimeHistory: [], // Permanent storage for all historical orders
+        tokenCounter: 1001,
+        selectedHistoryDate: new Date().toISOString().split("T")[0],
+        selectedHistoryTable: "all",
+        tables: Array.from({ length: 20 }, (_, i) =>
+          (i + 1).toString().padStart(2, "0")
+        ),
+        menuPagePath: "menu.html",
+        menuItems: [
+          {
+            id: 1,
+            name: "Margherita Pizza",
+            price: 12.99,
+            category: "Pizza",
+            image:
+              "https://images.unsplash.com/photo-1604068549290-dea0e4a305ca?w=400&h=300&fit=crop",
+          },
+          {
+            id: 2,
+            name: "Pepperoni Pizza",
+            price: 14.99,
+            category: "Pizza",
+            image:
+              "https://images.unsplash.com/photo-1628840042765-356cda07504e?w=400&h=300&fit=crop",
+          },
+          {
+            id: 3,
+            name: "Chicken Burger",
+            price: 10.99,
+            category: "Burgers",
+            image:
+              "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=300&fit=crop",
+          },
+          {
+            id: 4,
+            name: "Cheeseburger",
+            price: 9.99,
+            category: "Burgers",
+            image:
+              "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=400&h=300&fit=crop",
+          },
+          {
+            id: 5,
+            name: "French Fries",
+            price: 3.99,
+            category: "Sides",
+            image:
+              "https://images.unsplash.com/photo-1576107232684-1279f7b88cf8?w=400&h=300&fit=crop",
+          },
+          {
+            id: 6,
+            name: "Garlic Bread",
+            price: 4.99,
+            category: "Sides",
+            image:
+              "https://images.unsplash.com/photo-1573140247632-f8fd74997d5c?w=400&h=300&fit=crop",
+          },
+          {
+            id: 7,
+            name: "Caesar Salad",
+            price: 8.99,
+            category: "Salads",
+            image:
+              "https://images.unsplash.com/photo-1546793665-c74683f339c1?w=400&h=300&fit=crop",
+          },
+          {
+            id: 8,
+            name: "Coca Cola",
+            price: 2.99,
+            category: "Drinks",
+            image:
+              "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400&h=300&fit=crop",
+          },
+          {
+            id: 9,
+            name: "Lemonade",
+            price: 3.49,
+            category: "Drinks",
+            image:
+              "https://images.unsplash.com/photo-1621263764928-df1444c5e859?w=400&h=300&fit=crop",
+          },
+          {
+            id: 10,
+            name: "Chocolate Cake",
+            price: 6.99,
+            category: "Desserts",
+            image:
+              "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&h=300&fit=crop",
+          },
+        ],
+
+        // QR Code Generation Variables
+        qrBaseUrl: window.location.origin + "/menu.html",
+        selectedTables: [],
+
+        // JSON Database Structure
+        database: {
+          version: "1.0",
+          lastUpdated: "",
+          orders: [],
+          history: [],
+          settings: {
+            tables: [],
+            qrCodePath: "menu.html",
+            restaurantName: "QR Restaurant Ordering",
+          },
+        },
+
+        // NEW: Menu order synchronization tracking
+        lastSyncToken: null,
+        syncInterval: null,
+        menuSyncPending: false,
+
+        // NEW: PDF Export Functions
+        pdfExport: {
+          // Generate PDF report
+          generatePDF: function (orders, options = {}) {
+            try {
+              const { jsPDF } = window.jspdf;
+              const doc = new jsPDF("p", "mm", "a4");
+
+              // Set default options
+              const defaultOptions = {
+                includeSummary: true,
+                includeCharts: false,
+                groupByTable: false,
+                includeAllDetails: false,
+                startDate: null,
+                endDate: null,
+                title: "Order History Report",
+              };
+
+              const settings = { ...defaultOptions, ...options };
+
+              // Add header
+              this.addHeader(doc, settings.title);
+
+              // Add summary section
+              if (settings.includeSummary) {
+                this.addSummarySection(doc, orders);
+                doc.addPage();
+              }
+
+              // Add orders section
+              if (settings.groupByTable) {
+                this.addOrdersGroupedByTable(
+                  doc,
+                  orders,
+                  settings.includeAllDetails
+                );
+              } else {
+                this.addOrdersSection(doc, orders, settings.includeAllDetails);
+              }
+
+              // Add charts if requested
+              if (settings.includeCharts && orders.length > 0) {
+                doc.addPage();
+                this.addChartsSection(doc, orders);
+              }
+
+              // Add footer
+              this.addFooter(doc);
+
+              // Save the PDF
+              const fileName = `order-history-report-${
+                new Date().toISOString().split("T")[0]
+              }.pdf`;
+              doc.save(fileName);
+
+              return true;
+            } catch (error) {
+              console.error("PDF generation error:", error);
+              RestaurantSystem.showNotification("Failed to generate PDF");
+              return false;
+            }
+          },
+
+          // Add header to PDF
+          addHeader: function (doc, title) {
+            doc.setFontSize(20);
+            doc.setFont("helvetica", "bold");
+            doc.text(title, 105, 20, { align: "center" });
+
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "normal");
+            doc.text(
+              `Generated: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`,
+              105,
+              28,
+              { align: "center" }
+            );
+
+            doc.setFontSize(10);
+            doc.text("QR Restaurant Ordering System", 105, 35, {
+              align: "center",
+            });
+
+            // Add line
+            doc.setLineWidth(0.5);
+            doc.line(20, 40, 190, 40);
+          },
+
+          // Add summary section
+          addSummary: function (doc, orders) {
+            const summary = this.calculateSummary(orders);
+
+            doc.setFontSize(16);
+            doc.setFont("helvetica", "bold");
+            doc.text("Summary Report", 20, 50);
+
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "normal");
+
+            let yPos = 60;
+            const lineHeight = 7;
+
+            // Summary data
+            const summaryData = [
+              ["Total Orders:", summary.totalOrders.toString()],
+              ["Total Revenue:", `$${summary.totalRevenue.toFixed(2)}`],
+              [
+                "Average Order Value:",
+                `$${summary.averageOrderValue.toFixed(2)}`,
+              ],
+              ["Completed Orders:", summary.completedOrders.toString()],
+              ["Cancelled Orders:", summary.cancelledOrders.toString()],
+              ["Active Orders:", summary.activeOrders.toString()],
+            ];
+
+            summaryData.forEach(([label, value]) => {
+              doc.text(label, 20, yPos);
+              doc.text(value, 100, yPos);
+              yPos += lineHeight;
+            });
+
+            // Table statistics
+            if (
+              summary.tableStats &&
+              Object.keys(summary.tableStats).length > 0
+            ) {
+              yPos += lineHeight;
+              doc.setFont("helvetica", "bold");
+              doc.text("Table Statistics:", 20, yPos);
+              doc.setFont("helvetica", "normal");
+              yPos += lineHeight;
+
+              Object.entries(summary.tableStats)
+                .sort(([, a], [, b]) => b.orders - a.orders)
+                .slice(0, 5)
+                .forEach(([table, stats]) => {
+                  doc.text(
+                    `Table ${table}: ${
+                      stats.orders
+                    } orders ($${stats.revenue.toFixed(2)})`,
+                    25,
+                    yPos
+                  );
+                  yPos += lineHeight;
+                });
+            }
+
+            return yPos;
+          },
+
+          // Calculate summary statistics
+          calculateSummary: function (orders) {
+            const totalOrders = orders.length;
+            const totalRevenue = orders.reduce(
+              (sum, order) => sum + order.total,
+              0
+            );
+            const averageOrderValue =
+              totalOrders > 0 ? totalRevenue / totalOrders : 0;
+
+            const completedOrders = orders.filter(
+              (o) => o.status === "Completed"
+            ).length;
+            const cancelledOrders = orders.filter(
+              (o) => o.status === "Cancelled"
+            ).length;
+            const activeOrders = orders.filter(
+              (o) => o.status === "Order Placed" || o.status === "Preparing"
+            ).length;
+
+            // Table statistics
+            const tableStats = {};
+            orders.forEach((order) => {
+              if (!tableStats[order.table]) {
+                tableStats[order.table] = { orders: 0, revenue: 0 };
+              }
+              tableStats[order.table].orders++;
+              tableStats[order.table].revenue += order.total;
+            });
+
+            return {
+              totalOrders,
+              totalRevenue,
+              averageOrderValue,
+              completedOrders,
+              cancelledOrders,
+              activeOrders,
+              tableStats,
+            };
+          },
+
+          // Add orders section
+          addOrdersSection: function (doc, orders, includeAllDetails = false) {
+            doc.setFontSize(16);
+            doc.setFont("helvetica", "bold");
+            doc.text("Order Details", 20, 50);
+
+            let yPos = 60;
+            const lineHeight = 7;
+            const pageHeight = 280;
+            let orderCount = 0;
+
+            orders.forEach((order, index) => {
+              // Check if we need a new page
+              if (yPos > pageHeight - 50) {
+                doc.addPage();
+                yPos = 20;
+              }
+
+              doc.setFontSize(12);
+              doc.setFont("helvetica", "bold");
+              doc.text(
+                `Order #${order.token} - Table ${order.table}`,
+                20,
+                yPos
+              );
+              yPos += lineHeight;
+
+              doc.setFontSize(10);
+              doc.setFont("helvetica", "normal");
+              doc.text(
+                `Date: ${order.date} ${order.time} | Status: ${order.status}`,
+                20,
+                yPos
+              );
+              yPos += lineHeight;
+
+              if (includeAllDetails && order.items) {
+                doc.text("Items:", 20, yPos);
+                yPos += lineHeight;
+
+                order.items.forEach((item) => {
+                  doc.text(
+                    `  • ${item.name} x${item.quantity} - $${(
+                      item.price * item.quantity
+                    ).toFixed(2)}`,
+                    25,
+                    yPos
+                  );
+                  yPos += lineHeight;
+                });
+              }
+
+              doc.setFont("helvetica", "bold");
+              doc.text(`Total: $${order.total.toFixed(2)}`, 20, yPos);
+              yPos += lineHeight * 2;
+
+              doc.setDrawColor(200, 200, 200);
+              doc.setLineWidth(0.1);
+              doc.line(20, yPos, 190, yPos);
+              yPos += 5;
+
+              orderCount++;
+            });
+
+            return orderCount;
+          },
+
+          // Add orders grouped by table
+          addOrdersGroupedByTable: function (
+            doc,
+            orders,
+            includeAllDetails = false
+          ) {
+            // Group orders by table
+            const ordersByTable = {};
+            orders.forEach((order) => {
+              if (!ordersByTable[order.table]) {
+                ordersByTable[order.table] = [];
+              }
+              ordersByTable[order.table].push(order);
+            });
+
+            let yPos = 50;
+            const lineHeight = 7;
+            const pageHeight = 280;
+
+            Object.entries(ordersByTable)
+              .sort(([a], [b]) => parseInt(a) - parseInt(b))
+              .forEach(([table, tableOrders]) => {
+                // Check if we need a new page
+                if (yPos > pageHeight - 100) {
+                  doc.addPage();
+                  yPos = 20;
+                }
+
+                doc.setFontSize(14);
+                doc.setFont("helvetica", "bold");
+                doc.text(`Table ${table}`, 20, yPos);
+                yPos += lineHeight * 2;
+
+                const tableTotal = tableOrders.reduce(
+                  (sum, order) => sum + order.total,
+                  0
+                );
+                const tableOrderCount = tableOrders.length;
+
+                doc.setFontSize(10);
+                doc.setFont("helvetica", "normal");
+                doc.text(
+                  `Total Orders: ${tableOrderCount} | Total Revenue: $${tableTotal.toFixed(
+                    2
+                  )}`,
+                  20,
+                  yPos
+                );
+                yPos += lineHeight * 2;
+
+                // Add individual orders
+                tableOrders.forEach((order) => {
+                  if (yPos > pageHeight - 50) {
+                    doc.addPage();
+                    yPos = 20;
+                  }
+
+                  doc.setFontSize(10);
+                  doc.setFont("helvetica", "bold");
+                  doc.text(
+                    `Order #${order.token} - ${order.date} ${order.time}`,
+                    25,
+                    yPos
+                  );
+                  yPos += lineHeight;
+
+                  doc.setFont("helvetica", "normal");
+                  doc.text(
+                    `Status: ${order.status} | Total: $${order.total.toFixed(
+                      2
+                    )}`,
+                    25,
+                    yPos
+                  );
+                  yPos += lineHeight;
+
+                  if (includeAllDetails && order.items) {
+                    order.items.forEach((item) => {
+                      doc.text(
+                        `  • ${item.name} x${item.quantity} - $${(
+                          item.price * item.quantity
+                        ).toFixed(2)}`,
+                        30,
+                        yPos
+                      );
+                      yPos += lineHeight;
+                    });
+                  }
+
+                  yPos += lineHeight;
+                });
+
+                yPos += lineHeight * 2;
+                doc.setDrawColor(200, 200, 200);
+                doc.setLineWidth(0.5);
+                doc.line(20, yPos, 190, yPos);
+                yPos += 10;
+              });
+          },
+
+          // Add charts section (simplified - actual charts would require canvas)
+          addChartsSection: function (doc, orders) {
+            doc.setFontSize(16);
+            doc.setFont("helvetica", "bold");
+            doc.text("Statistics & Charts", 20, 50);
+
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "normal");
+
+            let yPos = 70;
+
+            // Order status distribution
+            const statusCounts = {};
+            orders.forEach((order) => {
+              statusCounts[order.status] =
+                (statusCounts[order.status] || 0) + 1;
+            });
+
+            doc.text("Order Status Distribution:", 20, yPos);
+            yPos += 10;
+
+            Object.entries(statusCounts).forEach(([status, count]) => {
+              const percentage = ((count / orders.length) * 100).toFixed(1);
+              doc.text(
+                `  • ${status}: ${count} orders (${percentage}%)`,
+                25,
+                yPos
+              );
+              yPos += 7;
+            });
+
+            yPos += 10;
+
+            // Daily revenue
+            const dailyRevenue = {};
+            orders.forEach((order) => {
+              if (!dailyRevenue[order.date]) {
+                dailyRevenue[order.date] = 0;
+              }
+              dailyRevenue[order.date] += order.total;
+            });
+
+            const sortedDays = Object.keys(dailyRevenue).sort();
+            if (sortedDays.length > 0) {
+              doc.text("Daily Revenue:", 20, yPos);
+              yPos += 10;
+
+              sortedDays.slice(-7).forEach((date) => {
+                const revenue = dailyRevenue[date];
+                doc.text(`  • ${date}: $${revenue.toFixed(2)}`, 25, yPos);
+                yPos += 7;
+              });
+            }
+          },
+
+          // Add footer
+          addFooter: function (doc) {
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+              doc.setPage(i);
+              doc.setFontSize(8);
+              doc.setFont("helvetica", "italic");
+              doc.text(`Page ${i} of ${pageCount}`, 105, 287, {
+                align: "center",
+              });
+              doc.text(
+                "QR Restaurant Ordering System - Confidential",
+                105,
+                292,
+                { align: "center" }
+              );
+            }
+          },
+
+          // Generate detailed PDF report
+          generateDetailedPDF: function (orders) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF("p", "mm", "a4");
+
+            // Add comprehensive header
+            this.addHeader(doc, "Detailed Order History Report");
+
+            // Add executive summary
+            doc.setFontSize(14);
+            doc.setFont("helvetica", "bold");
+            doc.text("Executive Summary", 20, 50);
+
+            const summary = this.calculateSummary(orders);
+            let yPos = 60;
+
+            // Summary table
+            const summaryTable = [
+              ["Metric", "Value"],
+              ["Total Orders", summary.totalOrders.toString()],
+              ["Total Revenue", `$${summary.totalRevenue.toFixed(2)}`],
+              [
+                "Average Order Value",
+                `$${summary.averageOrderValue.toFixed(2)}`,
+              ],
+              ["Completed Orders", summary.completedOrders.toString()],
+              ["Active Orders", summary.activeOrders.toString()],
+              [
+                "Cancellation Rate",
+                `${(
+                  (summary.cancelledOrders / summary.totalOrders) *
+                  100
+                ).toFixed(1)}%`,
+              ],
+            ];
+
+            doc.autoTable({
+              startY: yPos,
+              head: [summaryTable[0]],
+              body: summaryTable.slice(1),
+              theme: "striped",
+              headStyles: { fillColor: [52, 152, 219] },
+            });
+
+            // Add detailed orders
+            doc.addPage();
+            this.addOrdersGroupedByTable(doc, orders, true);
+
+            // Add analytics
+            doc.addPage();
+            this.addChartsSection(doc, orders);
+
+            // Add footer
+            this.addFooter(doc);
+
+            // Save PDF
+            const fileName = `detailed-order-report-${
+              new Date().toISOString().split("T")[0]
+            }.pdf`;
+            doc.save(fileName);
+
+            return true;
+          },
+        },
+
+        // Export filtered history to PDF
+        exportHistoryToPDF: function (detailed = false) {
+          try {
+            // Get current filter values
+            const statusFilter =
+              document.getElementById("history-filter-status")?.value || "all";
+            const timeFilter =
+              document.getElementById("history-filter-time")?.value || "all";
+            const minTotal =
+              parseFloat(document.getElementById("history-min-total")?.value) ||
+              0;
+            const maxTotal =
+              parseFloat(document.getElementById("history-max-total")?.value) ||
+              999999;
+            const startDate = document.getElementById("pdf-start-date")?.value;
+            const endDate = document.getElementById("pdf-end-date")?.value;
+
+            // Get all orders from allTimeHistory
+            let filteredOrders = [...this.allTimeHistory];
+
+            // Apply date range filter
+            if (startDate && endDate) {
+              filteredOrders = filteredOrders.filter((order) => {
+                const orderDate = order.date;
+                return orderDate >= startDate && orderDate <= endDate;
+              });
+            }
+
+            // Apply status filter
+            if (statusFilter !== "all") {
+              filteredOrders = filteredOrders.filter((order) =>
+                order.status.toLowerCase().includes(statusFilter.toLowerCase())
+              );
+            }
+
+            // Apply time filter
+            if (timeFilter !== "all") {
+              const today = new Date();
+              const startDate = new Date();
+
+              if (timeFilter === "today") {
+                startDate.setHours(0, 0, 0, 0);
+              } else if (timeFilter === "week") {
+                startDate.setDate(today.getDate() - 7);
+              } else if (timeFilter === "month") {
+                startDate.setMonth(today.getMonth() - 1);
+              } else if (timeFilter === "year") {
+                startDate.setFullYear(today.getFullYear() - 1);
+              }
+
+              filteredOrders = filteredOrders.filter((order) => {
+                const orderDate = new Date(order.date);
+                return orderDate >= startDate;
+              });
+            }
+
+            // Filter by total range
+            filteredOrders = filteredOrders.filter(
+              (order) => order.total >= minTotal && order.total <= maxTotal
+            );
+
+            // Filter by selected table
+            if (this.selectedHistoryTable !== "all") {
+              filteredOrders = filteredOrders.filter(
+                (order) => order.table === this.selectedHistoryTable
+              );
+            }
+
+            // Filter by selected date
+            if (this.selectedHistoryDate) {
+              filteredOrders = filteredOrders.filter(
+                (order) => order.date === this.selectedHistoryDate
+              );
+            }
+
+            if (filteredOrders.length === 0) {
+              this.showNotification("No orders found to export");
+              return false;
+            }
+
+            // Get PDF options
+            const includeSummary =
+              document.getElementById("include-summary")?.checked || false;
+            const includeCharts =
+              document.getElementById("include-charts")?.checked || false;
+            const groupByTable =
+              document.getElementById("group-by-table")?.checked || false;
+            const includeAllDetails =
+              document.getElementById("include-all-details")?.checked || false;
+
+            const pdfOptions = {
+              includeSummary,
+              includeCharts,
+              groupByTable,
+              includeAllDetails,
+              startDate,
+              endDate,
+              title: detailed
+                ? "Detailed Order Report"
+                : "Order History Report",
+            };
+
+            // Generate PDF
+            let success;
+            if (detailed) {
+              success = this.pdfExport.generateDetailedPDF(filteredOrders);
+            } else {
+              success = this.pdfExport.generatePDF(filteredOrders, pdfOptions);
+            }
+
+            if (success) {
+              this.showNotification(
+                `PDF exported successfully with ${filteredOrders.length} orders`
+              );
+              return true;
+            }
+          } catch (error) {
+            console.error("PDF export error:", error);
+            this.showNotification("Failed to generate PDF");
+            return false;
+          }
+        },
+
+        // NEW: Set PDF date range to match selected history date
+        setupPDFDateRange: function () {
+          const pdfStartDate = document.getElementById("pdf-start-date");
+          const pdfEndDate = document.getElementById("pdf-end-date");
+
+          if (pdfStartDate && pdfEndDate) {
+            // Set default dates (last 7 days)
+            const endDate = new Date();
+            const startDate = new Date();
+            startDate.setDate(endDate.getDate() - 7);
+
+            pdfStartDate.value = startDate.toISOString().split("T")[0];
+            pdfEndDate.value = endDate.toISOString().split("T")[0];
+
+            // Update when history date changes
+            pdfStartDate.addEventListener("change", () => {
+              if (!pdfEndDate.value) {
+                pdfEndDate.value = pdfStartDate.value;
+              }
+            });
+          }
+        },
+
+        /* ==================== ALL EXISTING FUNCTIONS REMAIN THE SAME ==================== */
+        // Function to check for orders from menu.html
+        checkForMenuOrders: function () {
+          const pendingOrders = localStorage.getItem("menuPendingOrders");
+          if (pendingOrders) {
+            try {
+              const orders = JSON.parse(pendingOrders);
+              let newOrdersCount = 0;
+              let processedTokens = [];
+
+              orders.forEach((orderData) => {
+                // Check if this is a new order for current table
+                if (
+                  orderData.table === this.currentTable &&
+                  orderData.items &&
+                  orderData.items.length > 0
+                ) {
+                  // Check if order already exists
+                  const existingOrder = this.allOrders.find(
+                    (o) => o.token === orderData.token
+                  );
+                  if (!existingOrder) {
+                    // Add order to system
+                    this.allOrders.push(orderData);
+                    this.allTimeHistory.push({ ...orderData, archived: false });
+
+                    // Update token counter if needed
+                    const tokenNum = parseInt(orderData.token);
+                    if (tokenNum >= this.tokenCounter) {
+                      this.tokenCounter = tokenNum + 1;
+                    }
+
+                    newOrdersCount++;
+                    processedTokens.push(orderData.token);
+                  }
+                }
+              });
+
+              // Clear processed pending orders
+              if (processedTokens.length > 0) {
+                const remainingOrders = orders.filter(
+                  (order) => !processedTokens.includes(order.token)
+                );
+                if (remainingOrders.length > 0) {
+                  localStorage.setItem(
+                    "menuPendingOrders",
+                    JSON.stringify(remainingOrders)
+                  );
+                } else {
+                  localStorage.removeItem("menuPendingOrders");
+                }
+              }
+
+              // Show notification if new orders were added
+              if (newOrdersCount > 0) {
+                this.saveDatabase();
+                this.updateAllViews();
+
+                // Show sync banner
+                this.showMenuSyncBanner(
+                  `${newOrdersCount} new order${
+                    newOrdersCount > 1 ? "s" : ""
+                  } from menu`
+                );
+
+                // If we're on orders page, show specific banner
+                if (
+                  document
+                    .getElementById("orders-page")
+                    .classList.contains("active")
+                ) {
+                  this.showOrdersSyncBanner(
+                    `${newOrdersCount} menu order${
+                      newOrdersCount > 1 ? "s" : ""
+                    } added`
+                  );
+                }
+
+                this.showNotification(
+                  `${newOrdersCount} new order${
+                    newOrdersCount > 1 ? "s" : ""
+                  } from menu synced successfully!`
+                );
+              }
+
+              return newOrdersCount;
+            } catch (error) {
+              console.error("Error processing menu orders:", error);
+              return 0;
+            }
+          }
+          return 0;
+        },
+
+        // NEW: Show menu sync banner
+        showMenuSyncBanner: function (message) {
+          const banner = document.getElementById("menu-sync-banner");
+          const messageElement = document.getElementById("sync-message");
+
+          if (banner && messageElement) {
+            messageElement.textContent = message;
+            banner.style.display = "flex";
+
+            // Auto hide after 5 seconds
+            setTimeout(() => {
+              banner.style.display = "none";
+            }, 5000);
+          }
+        },
+
+        // NEW: Show orders page sync banner
+        showOrdersSyncBanner: function (message) {
+          const banner = document.getElementById("orders-sync-banner");
+          const messageElement = document.getElementById("orders-sync-message");
+
+          if (banner && messageElement) {
+            messageElement.textContent = message;
+            banner.style.display = "flex";
+          }
+        },
+
+        // NEW: Hide orders sync banner
+        hideOrdersSyncBanner: function () {
+          const banner = document.getElementById("orders-sync-banner");
+          if (banner) {
+            banner.style.display = "none";
+          }
+        },
+
+        // NEW: Force sync menu orders
+        forceSyncMenuOrders: function () {
+          const syncCount = this.checkForMenuOrders();
+          if (syncCount > 0) {
+            this.showNotification(`Synced ${syncCount} orders from menu`);
+          } else {
+            this.showNotification("No new orders from menu found");
+          }
+        },
+
+        // Function to get orders for current table from menu.html
+        getTableOrdersFromMenu: function () {
+          const allOrders = localStorage.getItem("allMenuOrders");
+          if (allOrders) {
+            try {
+              const orders = JSON.parse(allOrders);
+              return orders.filter(
+                (order) => order.table === this.currentTable
+              );
+            } catch (error) {
+              console.error("Error getting menu orders:", error);
+              return [];
+            }
+          }
+          return [];
+        },
+
+        init: function () {
+          this.displayTableNumber();
+          this.setupEventListeners();
+          this.loadDatabase(); // Load from JSON database
+          this.setupNavigation();
+          this.loadTables();
+          this.initCalendar();
+          this.generateSampleData();
+          this.updateAllStats();
+          this.loadRecentOrders();
+          this.startAutoRefresh();
+          this.setupTableFromURL();
+          this.setupRoleSelector();
+          this.initializeQRCodePath(); // Setup QR code paths
+          this.initializeQRCodeGenerator(); // Initialize QR code generator
+
+          // NEW: Setup PDF date range
+          this.setupPDFDateRange();
+
+          // Check for menu orders immediately
+          const syncCount = this.checkForMenuOrders();
+          if (syncCount > 0) {
+            console.log(`Initial sync: ${syncCount} orders from menu`);
+          }
+
+          // Start enhanced polling for menu orders
+          this.startEnhancedMenuPolling();
+
+          console.log("System initialized successfully!");
+          console.log("Database loaded:", this.database);
+        },
+
+        // NEW: Enhanced menu polling with better synchronization
+        startEnhancedMenuPolling: function () {
+          // Clear any existing interval
+          if (this.syncInterval) {
+            clearInterval(this.syncInterval);
+          }
+
+          // Start new polling interval
+          this.syncInterval = setInterval(() => {
+            if (!this.menuSyncPending) {
+              this.menuSyncPending = true;
+              const syncCount = this.checkForMenuOrders();
+              if (syncCount > 0) {
+                console.log(`Polling sync: ${syncCount} orders from menu`);
+              }
+              this.menuSyncPending = false;
+            }
+          }, 2000); // Poll every 2 seconds for better responsiveness
+
+          // Also check for changes in menu database
+          setInterval(() => {
+            this.syncWithMenuDatabase();
+          }, 5000); // Full sync every 5 seconds
+        },
+
+        // Initialize QR Code Generator
+        initializeQRCodeGenerator: function () {
+          // Set default base URL
+          const qrBaseUrlInput = document.getElementById("qr-base-url");
+          if (qrBaseUrlInput) {
+            // Set to current domain + menu.html
+            qrBaseUrlInput.value = window.location.origin + "/menu.html";
+            this.qrBaseUrl = qrBaseUrlInput.value;
+          }
+
+          // Generate table selector for QR codes
+          this.generateTableSelector();
+
+          // Add event listeners for QR code buttons
+          document
+            .getElementById("generate-qr-btn")
+            ?.addEventListener("click", () => {
+              this.generateQRCode();
+            });
+
+          document
+            .getElementById("download-all-qr-btn")
+            ?.addEventListener("click", () => {
+              this.downloadAllQRCodes();
+            });
+
+          // Listen for changes in QR base URL
+          if (qrBaseUrlInput) {
+            qrBaseUrlInput.addEventListener("input", (e) => {
+              this.qrBaseUrl = e.target.value.trim();
+            });
+          }
+        },
+
+        // Generate table selector for QR codes
+        generateTableSelector: function () {
+          const container = document.getElementById("qr-table-selector");
+          if (!container) return;
+
+          let html = "";
+          this.tables.forEach((table) => {
+            html += `<div class="qr-table-option" data-table="${table}">
+                        Table ${table}
+                    </div>`;
+          });
+
+          container.innerHTML = html;
+
+          // Add click event listeners
+          document.querySelectorAll(".qr-table-option").forEach((option) => {
+            option.addEventListener("click", (e) => {
+              const table = e.currentTarget.dataset.table;
+              e.currentTarget.classList.toggle("selected");
+
+              if (this.selectedTables.includes(table)) {
+                this.selectedTables = this.selectedTables.filter(
+                  (t) => t !== table
+                );
+              } else {
+                this.selectedTables.push(table);
+              }
+            });
+          });
+        },
+
+        // Generate QR Code for specific table
+        generateQRCode: function () {
+          const qrBaseUrlInput = document.getElementById("qr-base-url");
+          if (qrBaseUrlInput) {
+            this.qrBaseUrl = qrBaseUrlInput.value.trim();
+          }
+
+          if (!this.qrBaseUrl) {
+            this.showNotification("Please enter a base URL for QR codes");
+            return;
+          }
+
+          const container = document.getElementById("qr-generator-container");
+          if (!container) return;
+
+          // Use selected tables or all tables if none selected
+          const tablesToGenerate =
+            this.selectedTables.length > 0 ? this.selectedTables : this.tables;
+
+          if (tablesToGenerate.length === 0) {
+            this.showNotification("Please select at least one table");
+            return;
+          }
+
+          let html = '<div class="qr-canvas-container">';
+
+          tablesToGenerate.forEach((table) => {
+            const qrUrl = `${this.qrBaseUrl}?table=${table}`;
+            const canvasId = `qr-canvas-${table}`;
+
+            html += `<div class="qr-canvas-wrapper">
+                        <div class="table-label">Table ${table}</div>
+                        <canvas id="${canvasId}"></canvas>
+                        <button class="order-action-btn view-btn" style="background-color: #3498db; padding: 8px 15px;" onclick="RestaurantSystem.downloadSingleQRCode('${table}', '${qrUrl}')">
+                            <i class="fas fa-download"></i> Download
+                        </button>
+                    </div>`;
+          });
+
+          html += "</div>";
+          container.innerHTML = html;
+
+          // Generate QR codes
+          tablesToGenerate.forEach((table) => {
+            const qrUrl = `${this.qrBaseUrl}?table=${table}`;
+            const canvasId = `qr-canvas-${table}`;
+            this.generateSingleQRCode(canvasId, qrUrl, `Table ${table}`);
+          });
+
+          this.showNotification(
+            `Generated ${tablesToGenerate.length} QR codes`
+          );
+        },
+
+        // Generate single QR code
+        generateSingleQRCode: function (canvasId, text, label) {
+          try {
+            QRCode.toCanvas(
+              document.getElementById(canvasId),
+              text,
+              {
+                width: 200,
+                height: 200,
+                margin: 1,
+                color: {
+                  dark: "#000000",
+                  light: "#FFFFFF",
+                },
+              },
+              function (error) {
+                if (error) {
+                  console.error("QR Code generation error:", error);
+                  RestaurantSystem.showNotification(
+                    "Failed to generate QR code"
+                  );
+                }
+              }
+            );
+          } catch (error) {
+            console.error("QR Code generation error:", error);
+            this.showNotification("Failed to generate QR code");
+          }
+        },
+
+        // Download single QR code
+        downloadSingleQRCode: function (table, qrUrl) {
+          try {
+            const canvas = document.getElementById(`qr-canvas-${table}`);
+            if (!canvas) return;
+
+            const link = document.createElement("a");
+            link.download = `table-${table}-qr-code.png`;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+
+            this.showNotification(`QR Code for Table ${table} downloaded`);
+          } catch (error) {
+            console.error("Download QR code error:", error);
+            this.showNotification("Failed to download QR code");
+          }
+        },
+
+        // Download all QR codes as ZIP
+        downloadAllQRCodes: function () {
+          try {
+            const zip = new JSZip();
+            const promises = [];
+            const tablesToDownload =
+              this.selectedTables.length > 0
+                ? this.selectedTables
+                : this.tables;
+
+            if (tablesToDownload.length === 0) {
+              this.showNotification("Please select tables to download");
+              return;
+            }
+
+            tablesToDownload.forEach((table) => {
+              const canvas = document.getElementById(`qr-canvas-${table}`);
+              if (canvas) {
+                const promise = new Promise((resolve) => {
+                  canvas.toBlob((blob) => {
+                    zip.file(`table-${table}-qr-code.png`, blob);
+                    resolve();
+                  }, "image/png");
+                });
+                promises.push(promise);
+              }
+            });
+
+            Promise.all(promises).then(() => {
+              zip.generateAsync({ type: "blob" }).then((content) => {
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(content);
+                link.download = `restaurant-qr-codes-${
+                  new Date().toISOString().split("T")[0]
+                }.zip`;
+                link.click();
+                URL.revokeObjectURL(link.href);
+
+                this.showNotification(
+                  `Downloaded ${tablesToDownload.length} QR codes as ZIP`
+                );
+              });
+            });
+          } catch (error) {
+            console.error("Download all QR codes error:", error);
+            this.showNotification("Failed to download QR codes");
+          }
+        },
+
+        // Sync with menu database
+        syncWithMenuDatabase: function () {
+          const menuDatabase = localStorage.getItem("menuDatabase");
+          if (menuDatabase) {
+            try {
+              const menuData = JSON.parse(menuDatabase);
+              if (menuData.orders) {
+                let updatedCount = 0;
+
+                menuData.orders.forEach((menuOrder) => {
+                  // Check if order exists in our system
+                  let existingOrder = this.allOrders.find(
+                    (o) => o.token === menuOrder.token
+                  );
+
+                  if (!existingOrder) {
+                    existingOrder = this.allTimeHistory.find(
+                      (o) => o.token === menuOrder.token
+                    );
+                  }
+
+                  if (existingOrder) {
+                    // Update order status if changed
+                    if (existingOrder.status !== menuOrder.status) {
+                      existingOrder.status = menuOrder.status;
+                      updatedCount++;
+
+                      // If status changed to completed or cancelled, move to history
+                      if (
+                        menuOrder.status === "Completed" ||
+                        menuOrder.status === "Cancelled"
+                      ) {
+                        this.moveToHistory(menuOrder.token);
+                      }
+                    }
+                  } else {
+                    // Import new order
+                    if (
+                      menuOrder.table &&
+                      menuOrder.items &&
+                      menuOrder.items.length > 0
+                    ) {
+                      this.allOrders.push(menuOrder);
+                      this.allTimeHistory.push({
+                        ...menuOrder,
+                        archived: false,
+                      });
+                      updatedCount++;
+
+                      // Update token counter
+                      const tokenNum = parseInt(menuOrder.token);
+                      if (tokenNum >= this.tokenCounter) {
+                        this.tokenCounter = tokenNum + 1;
+                      }
+                    }
+                  }
+                });
+
+                if (updatedCount > 0) {
+                  this.saveDatabase();
+                  this.updateAllViews();
+                  console.log(
+                    `Database sync: Updated ${updatedCount} orders from menu`
+                  );
+                }
+              }
+            } catch (error) {
+              console.error("Error syncing with menu database:", error);
+            }
+          }
+        },
+
+        // Initialize QR code path from database
+        initializeQRCodePath: function () {
+          if (this.database.settings.qrCodePath) {
+            this.menuPagePath = this.database.settings.qrCodePath;
+          }
+        },
+
+        // Save database to localStorage as JSON
+        saveDatabase: function () {
+          this.database.lastUpdated = new Date().toISOString();
+          this.database.orders = this.allOrders;
+          this.database.history = this.allTimeHistory;
+          this.database.settings.tables = this.tables;
+          this.database.settings.qrCodePath = this.menuPagePath;
+
+          localStorage.setItem(
+            "restaurantDatabase",
+            JSON.stringify(this.database)
+          );
+          console.log("Database saved:", this.database);
+        },
+
+        // Load database from localStorage
+        loadDatabase: function () {
+          const savedDatabase = localStorage.getItem("restaurantDatabase");
+          if (savedDatabase) {
+            try {
+              const db = JSON.parse(savedDatabase);
+              this.database = db;
+
+              // Migrate data from old storage if needed
+              if (db.orders) this.allOrders = db.orders;
+              if (db.history) this.allTimeHistory = db.history;
+              if (db.settings?.tables) this.tables = db.settings.tables;
+              if (db.settings?.qrCodePath)
+                this.menuPagePath = db.settings.qrCodePath;
+
+              // Calculate token counter
+              if (this.allTimeHistory.length > 0) {
+                const maxToken = Math.max(
+                  ...this.allTimeHistory.map((o) => parseInt(o.token))
+                );
+                this.tokenCounter = maxToken + 1;
+              }
+
+              console.log("Database loaded successfully");
+            } catch (error) {
+              console.error("Error loading database:", error);
+              this.initializeDefaultDatabase();
+            }
+          } else {
+            this.initializeDefaultDatabase();
+          }
+        },
+
+        initializeDefaultDatabase: function () {
+          this.database = {
+            version: "1.0",
+            lastUpdated: new Date().toISOString(),
+            orders: [],
+            history: [],
+            settings: {
+              tables: this.tables,
+              qrCodePath: "menu.html", // CHANGED: Now points to menu.html
+              restaurantName: "QR Restaurant Ordering",
+            },
+          };
+          this.saveDatabase();
+        },
+
+        setupTableFromURL: function () {
+          const urlParams = new URLSearchParams(window.location.search);
+          const table = urlParams.get("table");
+          if (table && this.tables.includes(table)) {
+            this.currentTable = table;
+            this.displayTableNumber();
+            this.showNotification(`Table ${table} selected successfully!`);
+          }
+        },
+
+        setupRoleSelector: function () {
+          const roleToggle = document.getElementById("role-toggle");
+          const roleDropdown = document.getElementById("role-dropdown");
+          const currentRoleText = document.getElementById("current-role");
+          const staffNav = document.getElementById("staff-nav");
+
+          roleToggle.addEventListener("click", (e) => {
+            e.stopPropagation();
+            roleDropdown.classList.toggle("show");
+          });
+
+          document.querySelectorAll(".role-option").forEach((option) => {
+            option.addEventListener("click", (e) => {
+              const role = e.currentTarget.dataset.role;
+              this.switchRole(role);
+              roleDropdown.classList.remove("show");
+              currentRoleText.textContent = this.getRoleDisplayName(role);
+
+              // Update active state
+              document.querySelectorAll(".role-option").forEach((opt) => {
+                opt.classList.remove("active");
+              });
+              e.currentTarget.classList.add("active");
+            });
+          });
+
+          // Setup staff navigation
+          document.querySelectorAll(".staff-nav-item").forEach((item) => {
+            item.addEventListener("click", (e) => {
+              const page = e.currentTarget.dataset.page;
+              this.showPage(page);
+
+              // Update active state
+              document
+                .querySelectorAll(".staff-nav-item")
+                .forEach((navItem) => {
+                  navItem.classList.remove("active");
+                });
+              e.currentTarget.classList.add("active");
+            });
+          });
+
+          // Close dropdown when clicking outside
+          document.addEventListener("click", () => {
+            roleDropdown.classList.remove("show");
+          });
+        },
+
+        getRoleDisplayName: function (role) {
+          const roles = {
+            customer: "Customer",
+            kitchen: "Kitchen Staff",
+            display: "Display Mode",
+            admin: "Admin",
+          };
+          return roles[role] || "Customer";
+        },
+
+        displayTableNumber: function () {
+          document.getElementById("table-number").textContent =
+            this.currentTable;
+        },
+
+        setupEventListeners: function () {
+          // Dashboard navigation buttons
+          document
+            .getElementById("my-orders-btn")
+            .addEventListener("click", () => {
+              this.showPage("orders");
+              this.hideOrdersSyncBanner(); // Hide sync banner when manually navigating
+            });
+
+          document
+            .getElementById("order-history-btn")
+            .addEventListener("click", () => {
+              this.showPage("history");
+            });
+
+          document.getElementById("menu-card").addEventListener("click", () => {
+            this.showMenuPage();
+          });
+
+          document
+            .getElementById("nav-menu-card")
+            .addEventListener("click", () => {
+              this.showMenuPage();
+            });
+
+          // Kitchen and Display access from dashboard
+          document
+            .getElementById("kitchen-access-btn")
+            .addEventListener("click", () => {
+              this.switchRole("kitchen");
+            });
+
+          document
+            .getElementById("display-access-btn")
+            .addEventListener("click", () => {
+              this.switchRole("display");
+            });
+
+          // Bill modal buttons
+          document
+            .getElementById("close-bill-btn")
+            .addEventListener("click", () => {
+              this.hideBillModal();
+            });
+
+          document
+            .getElementById("print-bill-btn")
+            .addEventListener("click", () => {
+              this.printBill();
+            });
+
+          // Order details modal buttons
+          document
+            .getElementById("close-order-details-btn")
+            .addEventListener("click", () => {
+              this.hideOrderDetailsModal();
+            });
+
+          document
+            .getElementById("print-order-details-btn")
+            .addEventListener("click", () => {
+              this.printOrderDetails();
+            });
+
+          // Data management buttons
+          document
+            .getElementById("export-data-btn")
+            .addEventListener("click", () => {
+              this.exportAllData();
+            });
+
+          document
+            .getElementById("import-data-btn")
+            .addEventListener("click", () => {
+              document.getElementById("import-file").click();
+            });
+
+          document
+            .getElementById("import-file")
+            .addEventListener("change", (e) => {
+              this.importDatabase(e.target.files[0]);
+            });
+
+          document
+            .getElementById("clear-history-btn")
+            .addEventListener("click", () => {
+              this.clearOldHistory();
+            });
+
+          document
+            .getElementById("backup-data-btn")
+            .addEventListener("click", () => {
+              this.backupToCloud();
+            });
+
+          // Admin buttons
+          document
+            .getElementById("admin-export-all")
+            .addEventListener("click", () => {
+              this.exportDatabaseJSON();
+            });
+
+          document
+            .getElementById("admin-import-data")
+            .addEventListener("click", () => {
+              document.getElementById("import-file").click();
+            });
+
+          document
+            .getElementById("admin-cleanup-data")
+            .addEventListener("click", () => {
+              this.cleanupOldData(true);
+            });
+
+          // History filters
+          document
+            .getElementById("history-filter-status")
+            .addEventListener("change", () => {
+              this.loadOrderHistory();
+            });
+
+          document
+            .getElementById("history-filter-time")
+            .addEventListener("change", () => {
+              this.loadOrderHistory();
+            });
+
+          document
+            .getElementById("history-min-total")
+            .addEventListener("input", () => {
+              this.loadOrderHistory();
+            });
+
+          document
+            .getElementById("history-max-total")
+            .addEventListener("input", () => {
+              this.loadOrderHistory();
+            });
+
+          // NEW: PDF Export buttons
+          document
+            .getElementById("export-pdf-btn")
+            .addEventListener("click", () => {
+              this.exportHistoryToPDF(false);
+            });
+
+          document
+            .getElementById("export-detailed-pdf-btn")
+            .addEventListener("click", () => {
+              this.exportHistoryToPDF(true);
+            });
+
+          // History export/import buttons
+          document
+            .getElementById("export-history-json")
+            .addEventListener("click", () => {
+              this.exportHistoryJSON();
+            });
+
+          document
+            .getElementById("import-history-json")
+            .addEventListener("click", () => {
+              // Create and trigger file input for history import
+              const historyFileInput = document.createElement("input");
+              historyFileInput.type = "file";
+              historyFileInput.accept = ".json";
+              historyFileInput.style.display = "none";
+              historyFileInput.addEventListener("change", (e) => {
+                this.importHistoryJSON(e.target.files[0]);
+              });
+              document.body.appendChild(historyFileInput);
+              historyFileInput.click();
+            });
+
+          // Kitchen filters
+          document
+            .getElementById("kitchen-filter-table")
+            .addEventListener("change", () => {
+              this.loadLiveOrders();
+            });
+
+          document
+            .getElementById("kitchen-filter-status")
+            .addEventListener("change", () => {
+              this.loadLiveOrders();
+            });
+        },
+
+        setupNavigation: function () {
+          // Bottom navigation
+          document
+            .getElementById("nav-dashboard")
+            .addEventListener("click", () => {
+              this.showPage("dashboard");
+            });
+
+          document
+            .getElementById("nav-orders")
+            .addEventListener("click", () => {
+              this.showPage("orders");
+              this.hideOrdersSyncBanner(); // Hide sync banner when manually navigating
+            });
+
+          document
+            .getElementById("nav-history")
+            .addEventListener("click", () => {
+              this.showPage("history");
+            });
+        },
+
+        initCalendar: function () {
+          const calendar = flatpickr("#calendar-picker", {
+            defaultDate: "today",
+            onChange: (selectedDates) => {
+              const date = selectedDates[0];
+              this.selectedHistoryDate = date.toISOString().split("T")[0];
+              document.getElementById("selected-date").textContent =
+                date.toLocaleDateString("en-US", {
+                  weekday: "short",
+                  month: "short",
+                  day: "numeric",
+                });
+              this.loadOrderHistory();
+            },
+          });
+
+          const today = new Date();
+          document.getElementById("selected-date").textContent =
+            today.toLocaleDateString("en-US", {
+              weekday: "short",
+              month: "short",
+              day: "numeric",
+            });
+        },
+
+        showMenuPage: function () {
+          const url = `${this.menuPagePath}?table=${this.currentTable}`;
+          window.open(url, "_blank");
+        },
+
+        loadTables: function () {
+          const container = document.getElementById("tables-grid");
+          if (!container) return;
+
+          // Count orders for each table
+          const tableCounts = {};
+          this.allTimeHistory.forEach((order) => {
+            if (order.date === this.selectedHistoryDate) {
+              tableCounts[order.table] = (tableCounts[order.table] || 0) + 1;
+            }
+          });
+
+          const allTableOrders = Object.values(tableCounts).reduce(
+            (a, b) => a + b,
+            0
+          );
+
+          let tablesHTML = `<div class="table-card ${
+            this.selectedHistoryTable === "all" ? "active" : ""
+          }" data-table="all">
+                    <div class="table-number">All</div>
+                    <div class="table-orders-count">${allTableOrders} orders</div>
+                </div>`;
+
+          this.tables.forEach((table) => {
+            const tableOrders = tableCounts[table] || 0;
+
+            tablesHTML += `<div class="table-card ${
+              this.selectedHistoryTable === table ? "active" : ""
+            }" data-table="${table}">
+                        <div class="table-number">${table}</div>
+                        <div class="table-orders-count">${tableOrders} orders</div>
+                    </div>`;
+          });
+
+          container.innerHTML = tablesHTML;
+
+          document.querySelectorAll(".table-card").forEach((card) => {
+            card.addEventListener("click", (e) => {
+              const table = e.currentTarget.dataset.table;
+              this.selectedHistoryTable = table;
+              document
+                .querySelectorAll(".table-card")
+                .forEach((c) => c.classList.remove("active"));
+              e.currentTarget.classList.add("active");
+              document.getElementById("selected-table").textContent =
+                table === "all" ? "All Tables" : `Table ${table}`;
+              this.loadOrderHistory();
+            });
+          });
+        },
+
+        switchRole: function (role) {
+          this.currentUserRole = role;
+
+          // Show/hide customer info
+          const customerInfo = document.getElementById("customer-info");
+          if (customerInfo) {
+            customerInfo.style.display = role === "customer" ? "flex" : "none";
+          }
+
+          // Update restaurant title
+          const titles = {
+            customer: "QR Restaurant Ordering",
+            kitchen: "Kitchen Dashboard",
+            display: "Kitchen Display",
+            admin: "Admin Dashboard",
+          };
+          const titleElement = document.getElementById("restaurant-title");
+          if (titleElement) {
+            titleElement.textContent = titles[role] || titles.customer;
+          }
+
+          // Show/hide navigation bar (only for customer)
+          const customerNav = document.getElementById("customer-nav");
+          if (customerNav) {
+            customerNav.style.display = role === "customer" ? "flex" : "none";
+          }
+
+          // Show/hide staff navigation
+          const staffNav = document.getElementById("staff-nav");
+          if (staffNav) {
+            if (role === "kitchen" || role === "admin" || role === "display") {
+              staffNav.classList.add("active");
+            } else {
+              staffNav.classList.remove("active");
+            }
+          }
+
+          // Show/hide data management section
+          const dataManagementSection = document.getElementById(
+            "data-management-section"
+          );
+          if (dataManagementSection) {
+            dataManagementSection.style.display =
+              role === "admin" ? "block" : "none";
+          }
+
+          // Show/hide QR code section
+          const qrSection = document.getElementById("qr-section");
+          if (qrSection) {
+            qrSection.style.display = role === "admin" ? "block" : "none";
+          }
+
+          // Show appropriate page
+          if (role === "display") {
+            this.showPage("display");
+            this.loadDisplayOrders();
+          } else if (role === "admin") {
+            this.showPage("admin");
+            this.updateAdminStats();
+          } else if (role === "kitchen") {
+            this.showPage("kitchen");
+            this.loadLiveOrders();
+          } else {
+            this.showPage("dashboard");
+          }
+
+          // Update current role display
+          const currentRoleElement = document.getElementById("current-role");
+          if (currentRoleElement) {
+            currentRoleElement.textContent = this.getRoleDisplayName(role);
+          }
+        },
+
+        showPage: function (pageId) {
+          document
+            .querySelectorAll(".page-container")
+            .forEach((page) => page.classList.remove("active"));
+          document.getElementById(`${pageId}-page`).classList.add("active");
+
+          if (this.currentUserRole === "customer") {
+            document
+              .querySelectorAll(".nav-item")
+              .forEach((nav) => nav.classList.remove("active"));
+            if (pageId !== "menu") {
+              const navElement = document.getElementById(`nav-${pageId}`);
+              if (navElement) {
+                navElement.classList.add("active");
+              }
+            }
+          }
+
+          if (pageId === "dashboard") {
+            this.updateAllStats();
+            this.loadRecentOrders();
+          } else if (pageId === "orders") {
+            this.loadOrders();
+          } else if (pageId === "history") {
+            this.loadOrderHistory();
+            this.loadTables();
+          } else if (pageId === "kitchen") {
+            this.updateAllStats();
+            this.loadLiveOrders();
+            this.populateKitchenFilters();
+          } else if (pageId === "display") {
+            this.loadDisplayOrders();
+          } else if (pageId === "admin") {
+            this.updateAdminStats();
+            this.generateTableSelector();
+          }
+        },
+
+        populateKitchenFilters: function () {
+          const tableFilter = document.getElementById("kitchen-filter-table");
+          if (!tableFilter) return;
+
+          tableFilter.innerHTML = '<option value="all">All Tables</option>';
+
+          this.tables.forEach((table) => {
+            tableFilter.innerHTML += `<option value="${table}">Table ${table}</option>`;
+          });
+        },
+
+        updateAllStats: function () {
+          const activeOrders = this.allOrders.filter(
+            (order) =>
+              order.status === "Order Placed" || order.status === "Preparing"
+          ).length;
+
+          const today = new Date().toISOString().split("T")[0];
+          const todayOrders = this.allOrders.filter(
+            (order) => order.date === today && order.status !== "Cancelled"
+          ).length;
+
+          const todayRevenue = this.allOrders
+            .filter(
+              (order) => order.date === today && order.status !== "Cancelled"
+            )
+            .reduce((total, order) => total + order.total, 0);
+
+          const readyOrders = this.allOrders.filter(
+            (order) => order.status === "Ready"
+          ).length;
+
+          const preparingOrders = this.allOrders.filter(
+            (order) => order.status === "Preparing"
+          ).length;
+
+          // Update Dashboard Stats
+          const dashboardActiveOrders = document.getElementById(
+            "dashboard-active-orders"
+          );
+          if (dashboardActiveOrders) {
+            dashboardActiveOrders.textContent = activeOrders;
+          }
+
+          const dashboardTodayOrders = document.getElementById(
+            "dashboard-today-orders"
+          );
+          if (dashboardTodayOrders) {
+            dashboardTodayOrders.textContent = todayOrders;
+          }
+
+          const dashboardTotalRevenue = document.getElementById(
+            "dashboard-total-revenue"
+          );
+          if (dashboardTotalRevenue) {
+            dashboardTotalRevenue.textContent = `$${todayRevenue.toFixed(2)}`;
+          }
+
+          const dashboardReadyOrders = document.getElementById(
+            "dashboard-ready-orders"
+          );
+          if (dashboardReadyOrders) {
+            dashboardReadyOrders.textContent = readyOrders;
+          }
+
+          // Update Kitchen Stats
+          const activeOrdersCount = document.getElementById(
+            "active-orders-count"
+          );
+          if (activeOrdersCount) {
+            activeOrdersCount.textContent = activeOrders;
+          }
+
+          const preparingOrdersCount = document.getElementById(
+            "preparing-orders-count"
+          );
+          if (preparingOrdersCount) {
+            preparingOrdersCount.textContent = preparingOrders;
+          }
+
+          const readyOrdersCount =
+            document.getElementById("ready-orders-count");
+          if (readyOrdersCount) {
+            readyOrdersCount.textContent = readyOrders;
+          }
+
+          const todayRevenueElement = document.getElementById("today-revenue");
+          if (todayRevenueElement) {
+            todayRevenueElement.textContent = `$${todayRevenue.toFixed(2)}`;
+          }
+        },
+
+        updateAdminStats: function () {
+          const totalOrders = this.allTimeHistory.length;
+          const totalRevenue = this.allTimeHistory.reduce(
+            (total, order) => total + order.total,
+            0
+          );
+          const avgOrder = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+
+          // Find most active table
+          const tableActivity = {};
+          this.allTimeHistory.forEach((order) => {
+            tableActivity[order.table] = (tableActivity[order.table] || 0) + 1;
+          });
+
+          let mostActiveTable = "-";
+          let maxOrders = 0;
+          Object.entries(tableActivity).forEach(([table, count]) => {
+            if (count > maxOrders) {
+              maxOrders = count;
+              mostActiveTable = table;
+            }
+          });
+
+          const adminTotalOrders =
+            document.getElementById("admin-total-orders");
+          if (adminTotalOrders) {
+            adminTotalOrders.textContent = totalOrders;
+          }
+
+          const adminTotalRevenue = document.getElementById(
+            "admin-total-revenue"
+          );
+          if (adminTotalRevenue) {
+            adminTotalRevenue.textContent = `$${totalRevenue.toFixed(2)}`;
+          }
+
+          const adminAvgOrder = document.getElementById("admin-avg-order");
+          if (adminAvgOrder) {
+            adminAvgOrder.textContent = `$${avgOrder.toFixed(2)}`;
+          }
+
+          const adminMostActiveTable = document.getElementById(
+            "admin-most-active-table"
+          );
+          if (adminMostActiveTable) {
+            adminMostActiveTable.textContent = mostActiveTable;
+          }
+        },
+
+        loadRecentOrders: function () {
+          const container = document.getElementById("recent-orders-list");
+          if (!container) return;
+
+          const recentOrders = this.allOrders
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+            .slice(0, 5);
+
+          if (recentOrders.length === 0) {
+            container.innerHTML = `<div class="order-row">
+                        <div class="order-token-small">No recent orders</div>
+                        <div class="order-time-small">-</div>
+                        <div class="order-status-small status-placed">-</div>
+                    </div>`;
+          } else {
+            let ordersHTML = "";
+            recentOrders.forEach((order) => {
+              let statusClass = "status-placed";
+              if (order.status === "Preparing")
+                statusClass = "status-preparing";
+              if (order.status === "Ready") statusClass = "status-ready";
+              if (order.status === "Cancelled")
+                statusClass = "status-cancelled";
+
+              ordersHTML += `<div class="order-row" data-token="${order.token}">
+                            <div class="order-token-small">
+                                <i class="fas fa-hashtag"></i> ${order.token}
+                                <span style="font-size: 12px; color: #666; margin-left: 10px;">Table ${order.table}</span>
+                            </div>
+                            <div class="order-time-small">${order.time}</div>
+                            <div class="order-status-small ${statusClass}">${order.status}</div>
+                        </div>`;
+            });
+
+            container.innerHTML = ordersHTML;
+            document
+              .querySelectorAll(".order-row[data-token]")
+              .forEach((row) => {
+                row.addEventListener("click", (e) => {
+                  const token = e.currentTarget.dataset.token;
+                  this.showBillModal(token);
+                });
+              });
+          }
+        },
+
+        loadOrders: function () {
+          const container = document.getElementById("orders-container");
+          if (!container) return;
+
+          // Get orders from main system
+          const currentTableOrders = this.allOrders.filter(
+            (order) =>
+              order.table === this.currentTable &&
+              order.status !== "Cancelled" &&
+              order.status !== "Completed"
+          );
+
+          // Get orders from menu.html
+          const menuTableOrders = this.getTableOrdersFromMenu();
+
+          // Also check allMenuOrders for additional orders
+          const allMenuOrders = localStorage.getItem("allMenuOrders");
+          let additionalMenuOrders = [];
+          if (allMenuOrders) {
+            try {
+              const allOrders = JSON.parse(allMenuOrders);
+              additionalMenuOrders = allOrders.filter(
+                (order) =>
+                  order.table === this.currentTable &&
+                  !menuTableOrders.find((o) => o.token === order.token) &&
+                  !currentTableOrders.find((o) => o.token === order.token)
+              );
+            } catch (error) {
+              console.error("Error loading additional menu orders:", error);
+            }
+          }
+
+          // Combine all sources
+          const allTableOrders = [
+            ...currentTableOrders,
+            ...menuTableOrders,
+            ...additionalMenuOrders,
+          ];
+
+          // Remove duplicates
+          const uniqueOrders = [];
+          const seenTokens = new Set();
+
+          allTableOrders.forEach((order) => {
+            if (!seenTokens.has(order.token)) {
+              seenTokens.add(order.token);
+              uniqueOrders.push(order);
+            }
+          });
+
+          if (uniqueOrders.length === 0) {
+            container.innerHTML = `<div class="no-orders">
+                        <i class="fas fa-clipboard"></i>
+                        <h3>No Active Orders</h3>
+                        <p>You haven't placed any orders yet.</p>
+                        <button class="order-action-btn ready-btn" onclick="RestaurantSystem.showMenuPage()" style="margin-top: 20px; width: auto; padding: 12px 30px;">
+                            <i class="fas fa-book-open"></i> Browse Menu
+                        </button>
+                    </div>`;
+          } else {
+            let ordersHTML = "";
+            uniqueOrders.forEach((order) => {
+              let itemsHTML = "";
+              order.items.forEach((item) => {
+                itemsHTML += `<div class="order-item">
+                                <span>${item.name} x${item.quantity}</span>
+                                <span>$${(item.price * item.quantity).toFixed(
+                                  2
+                                )}</span>
+                            </div>`;
+              });
+
+              let statusClass = "status-placed";
+              if (order.status === "Preparing")
+                statusClass = "status-preparing";
+              if (order.status === "Ready") statusClass = "status-ready";
+              if (order.status === "Cancelled")
+                statusClass = "status-cancelled";
+              if (order.status === "Completed")
+                statusClass = "status-completed";
+
+              ordersHTML += `<div class="order-card">
+                            <div class="order-header">
+                                <div class="order-token"><i class="fas fa-hashtag"></i> ${
+                                  order.token
+                                }</div>
+                                <div class="order-status ${statusClass}">${
+                order.status
+              }</div>
+                            </div>
+                            <div class="order-time"><i class="far fa-clock"></i> ${
+                              order.time
+                            } - ${order.date}</div>
+                            <div class="order-items">${itemsHTML}</div>
+                            <div class="order-total">
+                                <span>Total Amount:</span>
+                                <span class="total-price">$${order.total.toFixed(
+                                  2
+                                )}</span>
+                            </div>
+                            <div class="order-actions">
+                                ${
+                                  order.status === "Order Placed"
+                                    ? `<button class="order-action-btn cancel-btn" data-token="${order.token}">
+                                    <i class="fas fa-times"></i> Cancel
+                                </button>`
+                                    : ""
+                                }
+                                <button class="order-action-btn print-btn" data-token="${
+                                  order.token
+                                }">
+                                    <i class="fas fa-print"></i> Print
+                                </button>
+                                <button class="order-action-btn bill-btn" data-token="${
+                                  order.token
+                                }">
+                                    <i class="fas fa-file-invoice-dollar"></i> Bill
+                                </button>
+                            </div>
+                        </div>`;
+            });
+
+            container.innerHTML = ordersHTML;
+
+            // Add event listeners to order buttons
+            document.querySelectorAll(".cancel-btn").forEach((btn) => {
+              btn.addEventListener("click", (e) => {
+                const token = e.target.closest(".cancel-btn").dataset.token;
+                this.cancelOrder(token);
+              });
+            });
+
+            document
+              .querySelectorAll(".print-btn, .bill-btn")
+              .forEach((btn) => {
+                btn.addEventListener("click", (e) => {
+                  const token = e.target.closest("button").dataset.token;
+                  this.showBillModal(token);
+                });
+              });
+          }
+        },
+
+        loadLiveOrders: function () {
+          const container = document.getElementById("live-orders-grid");
+          if (!container) return;
+
+          const tableFilter =
+            document.getElementById("kitchen-filter-table")?.value || "all";
+          const statusFilter =
+            document.getElementById("kitchen-filter-status")?.value || "active";
+
+          let activeOrders = this.allOrders.filter(
+            (order) =>
+              order.status === "Order Placed" ||
+              order.status === "Preparing" ||
+              order.status === "Ready"
+          );
+
+          // Also get orders from menu.html
+          const menuDatabase = localStorage.getItem("menuDatabase");
+          if (menuDatabase) {
+            try {
+              const menuData = JSON.parse(menuDatabase);
+              if (menuData.orders) {
+                menuData.orders.forEach((menuOrder) => {
+                  // Add menu orders that aren't already in our list
+                  if (
+                    !activeOrders.find((o) => o.token === menuOrder.token) &&
+                    (menuOrder.status === "Order Placed" ||
+                      menuOrder.status === "Preparing" ||
+                      menuOrder.status === "Ready")
+                  ) {
+                    activeOrders.push(menuOrder);
+                  }
+                });
+              }
+            } catch (error) {
+              console.error("Error loading menu orders for kitchen:", error);
+            }
+          }
+
+          // Apply filters
+          if (tableFilter !== "all") {
+            activeOrders = activeOrders.filter(
+              (order) => order.table === tableFilter
+            );
+          }
+
+          if (statusFilter === "preparing") {
+            activeOrders = activeOrders.filter(
+              (order) => order.status === "Preparing"
+            );
+          } else if (statusFilter === "ready") {
+            activeOrders = activeOrders.filter(
+              (order) => order.status === "Ready"
+            );
+          } else if (statusFilter === "active") {
+            activeOrders = activeOrders.filter(
+              (order) => order.status !== "Ready"
+            );
+          }
+
+          if (activeOrders.length === 0) {
+            container.innerHTML = `<div style="text-align: center; padding: 40px; color: #666; grid-column: 1 / -1;">
+                        <i class="fas fa-utensils" style="font-size: 60px; margin-bottom: 20px; color: #444"></i>
+                        <h3 style="color: #aaa;">No Active Orders</h3>
+                        <p style="color: #666;">Waiting for new orders...</p>
+                    </div>`;
+          } else {
+            let ordersHTML = "";
+            activeOrders.forEach((order) => {
+              let itemsHTML = "";
+              order.items.forEach((item) => {
+                itemsHTML += `<div class="live-order-item">
+                                <div class="live-order-item-name">${item.name}</div>
+                                <div class="live-order-item-qty">x${item.quantity}</div>
+                            </div>`;
+              });
+
+              const isPreparing = order.status === "Preparing";
+              const timeAgo = this.getTimeAgo(order.timestamp);
+
+              ordersHTML += `<div class="live-order-card" style="animation: ${
+                isPreparing ? "pulse 2s infinite" : "none"
+              }" data-token="${order.token}">
+                            <div class="live-order-header">
+                                <div>
+                                    <div class="live-order-token">${
+                                      order.token
+                                    }</div>
+                                    <div class="live-order-time"><i class="far fa-clock"></i> ${
+                                      order.time
+                                    } (${timeAgo})</div>
+                                </div>
+                                <div class="live-order-table">Table ${
+                                  order.table
+                                }</div>
+                            </div>
+                            <div class="live-order-items">${itemsHTML}</div>
+                            <div class="live-order-footer">
+                                <div class="live-order-total">$${order.total.toFixed(
+                                  2
+                                )}</div>
+                                <div class="live-order-actions">
+                                    ${
+                                      order.status === "Order Placed"
+                                        ? `<button class="live-order-action-btn live-order-start-btn" data-token="${order.token}">Start Prep</button>`
+                                        : ""
+                                    }
+                                    ${
+                                      order.status === "Preparing"
+                                        ? `<button class="live-order-action-btn live-order-complete-btn" data-token="${order.token}">Mark Ready</button>`
+                                        : ""
+                                    }
+                                    ${
+                                      order.status === "Ready"
+                                        ? `<button class="live-order-action-btn" style="background-color: #27ae60; color: white;" data-token="${order.token}">Ready</button>`
+                                        : ""
+                                    }
+                                </div>
+                            </div>
+                        </div>`;
+            });
+
+            container.innerHTML = ordersHTML;
+
+            // Add click events to kitchen order cards
+            document.querySelectorAll(".live-order-card").forEach((card) => {
+              card.addEventListener("click", (e) => {
+                if (!e.target.closest(".live-order-action-btn")) {
+                  const token = e.currentTarget.dataset.token;
+                  this.showOrderDetailsModal(token);
+                }
+              });
+            });
+
+            // Add click events to kitchen action buttons
+            document
+              .querySelectorAll(".live-order-start-btn")
+              .forEach((btn) => {
+                btn.addEventListener("click", (e) => {
+                  e.stopPropagation();
+                  const token = e.target.closest(".live-order-start-btn")
+                    .dataset.token;
+                  this.updateOrderStatus(token, "Preparing");
+                });
+              });
+
+            document
+              .querySelectorAll(".live-order-complete-btn")
+              .forEach((btn) => {
+                btn.addEventListener("click", (e) => {
+                  e.stopPropagation();
+                  const token = e.target.closest(".live-order-complete-btn")
+                    .dataset.token;
+                  this.updateOrderStatus(token, "Ready");
+                });
+              });
+          }
+        },
+
+        loadDisplayOrders: function () {
+          const container = document.getElementById("display-orders-grid");
+          if (!container) return;
+
+          const activeOrders = this.allOrders.filter(
+            (order) =>
+              order.status === "Order Placed" || order.status === "Preparing"
+          );
+
+          // Also get orders from menu.html
+          const menuDatabase = localStorage.getItem("menuDatabase");
+          if (menuDatabase) {
+            try {
+              const menuData = JSON.parse(menuDatabase);
+              if (menuData.orders) {
+                menuData.orders.forEach((menuOrder) => {
+                  if (
+                    !activeOrders.find((o) => o.token === menuOrder.token) &&
+                    (menuOrder.status === "Order Placed" ||
+                      menuOrder.status === "Preparing")
+                  ) {
+                    activeOrders.push(menuOrder);
+                  }
+                });
+              }
+            } catch (error) {
+              console.error("Error loading menu orders for display:", error);
+            }
+          }
+
+          if (activeOrders.length === 0) {
+            container.innerHTML = `<div style="text-align: center; padding: 50px; grid-column: 1 / -1;">
+                        <i class="fas fa-utensils" style="font-size: 80px; margin-bottom: 20px; color: #444"></i>
+                        <h2 style="color: #aaa; margin-bottom: 10px;">No Active Orders</h3>
+                        <p style="color: #666;">Waiting for new orders...</p>
+                    </div>`;
+          } else {
+            let ordersHTML = "";
+            activeOrders.forEach((order) => {
+              let itemsHTML = "";
+              order.items.slice(0, 5).forEach((item) => {
+                itemsHTML += `<div class="display-order-item">
+                                <span>${item.name}</span>
+                                <span style="color: #e67e22;">x${item.quantity}</span>
+                            </div>`;
+              });
+
+              if (order.items.length > 5) {
+                itemsHTML += `<div style="color: #aaa; text-align: center; padding: 5px;">+${
+                  order.items.length - 5
+                } more items</div>`;
+              }
+
+              const statusColor =
+                order.status === "Preparing" ? "#f39c12" : "#e74c3c";
+
+              ordersHTML += `<div class="display-order-card" data-token="${
+                order.token
+              }">
+                            <div class="display-order-token">${
+                              order.token
+                            }</div>
+                            <div class="display-order-table">
+                                <i class="fas fa-table"></i> Table ${
+                                  order.table
+                                }
+                                <span style="margin-left: 10px; font-size: 14px; color: ${statusColor}">● ${
+                order.status
+              }</span>
+                            </div>
+                            <div class="display-order-items">${itemsHTML}</div>
+                            <div class="display-order-time">
+                                <i class="far fa-clock"></i> ${
+                                  order.time
+                                } • Total: $${order.total.toFixed(2)}
+                            </div>
+                        </div>`;
+            });
+
+            container.innerHTML = ordersHTML;
+            document.querySelectorAll(".display-order-card").forEach((card) => {
+              card.addEventListener("click", () => {
+                const token = card.dataset.token;
+                this.showOrderDetailsModal(token);
+              });
+            });
+          }
+        },
+
+        getTimeAgo: function (timestamp) {
+          if (!timestamp) return "just now";
+          const now = new Date();
+          const orderTime = new Date(timestamp);
+          const diffMs = now - orderTime;
+          const diffMins = Math.floor(diffMs / 60000);
+          if (diffMins < 1) return "just now";
+          if (diffMins === 1) return "1 min ago";
+          return `${diffMins} mins ago`;
+        },
+
+        // Enhanced order placement function with JSON database and menu synchronization
+        placeOrder: function (items, table) {
+          const token = this.tokenCounter.toString();
+          const now = new Date();
+          const date = now.toISOString().split("T")[0];
+          const time = now.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+
+          const order = {
+            token: token,
+            table: table || this.currentTable,
+            date: date,
+            time: time,
+            timestamp: now.getTime(),
+            status: "Order Placed",
+            items: items,
+            total: items.reduce(
+              (sum, item) => sum + item.price * item.quantity,
+              0
+            ),
+            source: "menu.html",
+          };
+
+          this.allOrders.push(order);
+          this.allTimeHistory.push({ ...order, archived: false });
+          this.tokenCounter++;
+
+          // Save to JSON database
+          this.saveDatabase();
+
+          // Also save to menu database
+          this.saveToMenuDatabase(order);
+
+          // Update all displays
+          this.updateAllStats();
+          this.loadRecentOrders();
+          this.loadLiveOrders();
+          this.loadDisplayOrders();
+
+          // Show notification
+          this.showNotification(`Order #${token} placed successfully!`);
+
+          // If in customer view, show orders page
+          if (this.currentUserRole === "customer") {
+            this.showPage("orders");
+          }
+
+          return token;
+        },
+
+        // Save order to menu database
+        saveToMenuDatabase: function (order) {
+          let menuDatabase = localStorage.getItem("menuDatabase");
+          if (!menuDatabase) {
+            menuDatabase = {
+              version: "1.0",
+              orders: [],
+              menuItems: this.menuItems,
+              settings: {
+                restaurantName: "QR Restaurant Menu",
+              },
+            };
+          } else {
+            menuDatabase = JSON.parse(menuDatabase);
+          }
+
+          // Add order to menu database if not already present
+          if (!menuDatabase.orders.find((o) => o.token === order.token)) {
+            menuDatabase.orders.push(order);
+            localStorage.setItem("menuDatabase", JSON.stringify(menuDatabase));
+          }
+        },
+
+        cancelOrder: function (token) {
+          if (confirm("Are you sure you want to cancel this order?")) {
+            const orderIndex = this.allOrders.findIndex(
+              (order) => order.token === token
+            );
+            if (orderIndex !== -1) {
+              this.allOrders[orderIndex].status = "Cancelled";
+
+              // Also update in menu database
+              this.updateMenuDatabaseOrder(token, "Cancelled");
+
+              // Move to history before removing from active orders
+              this.moveToHistory(token);
+
+              this.updateAllViews();
+              this.showNotification(`Order #${token} cancelled`);
+            }
+          }
+        },
+
+        // Update order in menu database
+        updateMenuDatabaseOrder: function (token, status) {
+          const menuDatabase = localStorage.getItem("menuDatabase");
+          if (menuDatabase) {
+            try {
+              const menuData = JSON.parse(menuDatabase);
+              const orderIndex = menuData.orders.findIndex(
+                (order) => order.token === token
+              );
+              if (orderIndex !== -1) {
+                menuData.orders[orderIndex].status = status;
+                localStorage.setItem("menuDatabase", JSON.stringify(menuData));
+              }
+            } catch (error) {
+              console.error("Error updating menu database order:", error);
+            }
+          }
+        },
+
+        updateOrderStatus: function (token, newStatus) {
+          const orderIndex = this.allOrders.findIndex(
+            (order) => order.token === token
+          );
+          if (orderIndex !== -1) {
+            this.allOrders[orderIndex].status = newStatus;
+
+            // Also update in menu database
+            this.updateMenuDatabaseOrder(token, newStatus);
+
+            if (newStatus === "Ready") {
+              // Auto-move to history after 5 minutes if not collected
+              setTimeout(() => {
+                this.autoCompleteOrder(token);
+              }, 5 * 60 * 1000); // 5 minutes
+            } else if (newStatus === "Completed") {
+              // Move to history immediately if marked as completed
+              this.moveToHistory(token);
+            }
+
+            this.updateAllViews();
+            this.showNotification(`Order #${token} marked as ${newStatus}`);
+          }
+        },
+
+        moveToHistory: function (token) {
+          const orderIndex = this.allOrders.findIndex(
+            (order) => order.token === token
+          );
+          if (orderIndex !== -1) {
+            const order = this.allOrders[orderIndex];
+
+            // Add to history
+            this.allHistory.push(order);
+
+            // Update allTimeHistory
+            const allTimeIndex = this.allTimeHistory.findIndex(
+              (o) => o.token === token
+            );
+            if (allTimeIndex !== -1) {
+              this.allTimeHistory[allTimeIndex] = { ...order, archived: false };
+            }
+
+            // Remove from active orders
+            this.allOrders.splice(orderIndex, 1);
+
+            this.saveDatabase();
+          }
+        },
+
+        autoCompleteOrder: function (token) {
+          const orderIndex = this.allOrders.findIndex(
+            (order) => order.token === token && order.status === "Ready"
+          );
+          if (orderIndex !== -1) {
+            this.allOrders[orderIndex].status = "Completed";
+            this.moveToHistory(token);
+            this.updateAllViews();
+          }
+        },
+
+        updateAllViews: function () {
+          this.updateAllStats();
+          this.updateAdminStats();
+          this.loadRecentOrders();
+          this.loadOrders();
+          this.loadLiveOrders();
+          this.loadDisplayOrders();
+          this.saveDatabase();
+        },
+
+        loadOrderHistory: function () {
+          const container = document.getElementById("history-list");
+          const countElement = document.getElementById("history-count");
+          if (!container || !countElement) return;
+
+          const statusFilter =
+            document.getElementById("history-filter-status")?.value || "all";
+          const timeFilter =
+            document.getElementById("history-filter-time")?.value || "all";
+          const minTotal =
+            parseFloat(document.getElementById("history-min-total")?.value) ||
+            0;
+          const maxTotal =
+            parseFloat(document.getElementById("history-max-total")?.value) ||
+            999999;
+
+          let filteredOrders;
+          if (this.selectedHistoryTable === "all") {
+            filteredOrders = this.allTimeHistory.filter(
+              (order) => order.date === this.selectedHistoryDate
+            );
+          } else {
+            filteredOrders = this.allTimeHistory.filter(
+              (order) =>
+                order.date === this.selectedHistoryDate &&
+                order.table === this.selectedHistoryTable
+            );
+          }
+
+          // Also get orders from menu database
+          const menuDatabase = localStorage.getItem("menuDatabase");
+          if (menuDatabase) {
+            try {
+              const menuData = JSON.parse(menuDatabase);
+              if (menuData.orders) {
+                menuData.orders.forEach((menuOrder) => {
+                  if (menuOrder.date === this.selectedHistoryDate) {
+                    if (
+                      this.selectedHistoryTable === "all" ||
+                      menuOrder.table === this.selectedHistoryTable
+                    ) {
+                      if (
+                        !filteredOrders.find((o) => o.token === menuOrder.token)
+                      ) {
+                        filteredOrders.push(menuOrder);
+                      }
+                    }
+                  }
+                });
+              }
+            } catch (error) {
+              console.error("Error loading menu orders for history:", error);
+            }
+          }
+
+          // Apply additional filters
+          if (statusFilter !== "all") {
+            filteredOrders = filteredOrders.filter((order) =>
+              order.status.toLowerCase().includes(statusFilter.toLowerCase())
+            );
+          }
+
+          if (timeFilter !== "all") {
+            const today = new Date();
+            const startDate = new Date();
+
+            if (timeFilter === "today") {
+              startDate.setHours(0, 0, 0, 0);
+            } else if (timeFilter === "week") {
+              startDate.setDate(today.getDate() - 7);
+            } else if (timeFilter === "month") {
+              startDate.setMonth(today.getMonth() - 1);
+            } else if (timeFilter === "year") {
+              startDate.setFullYear(today.getFullYear() - 1);
+            }
+
+            filteredOrders = filteredOrders.filter((order) => {
+              const orderDate = new Date(order.date);
+              return orderDate >= startDate;
+            });
+          }
+
+          // Filter by total range
+          filteredOrders = filteredOrders.filter(
+            (order) => order.total >= minTotal && order.total <= maxTotal
+          );
+
+          if (filteredOrders.length === 0) {
+            container.innerHTML = `<div class="no-orders" style="padding: 40px 20px;">
+                        <i class="fas fa-history" style="font-size: 60px;"></i>
+                        <h3>No Order History</h3>
+                        <p>No orders found for selected filters.</p>
+                    </div>`;
+            countElement.textContent = "0 Orders";
+          } else {
+            let historyHTML = "";
+            filteredOrders.forEach((order) => {
+              let itemsHTML = "";
+              order.items.forEach((item) => {
+                itemsHTML += `<div class="history-item-row">
+                                <span>${item.name} x${item.quantity}</span>
+                                <span>$${(item.price * item.quantity).toFixed(
+                                  2
+                                )}</span>
+                            </div>`;
+              });
+
+              let statusColor = "#e74c3c";
+              if (order.status === "Preparing") statusColor = "#a29bfe";
+              if (order.status === "Ready") statusColor = "#27ae60";
+              if (order.status === "Cancelled") statusColor = "#95a5a6";
+              if (order.status === "Completed") statusColor = "#81ecec";
+              if (order.status === "Order Placed") statusColor = "#ffeaa7";
+
+              historyHTML += `<div class="history-item" data-token="${
+                order.token
+              }">
+                            <div class="history-item-header">
+                                <div class="history-token">
+                                    <i class="fas fa-hashtag"></i> ${
+                                      order.token
+                                    }
+                                    <span style="font-size: 12px; color: ${statusColor}; margin-left: 10px;">${
+                order.status
+              }</span>
+                                </div>
+                                <div>
+                                    <span class="history-table"><i class="fas fa-table"></i> Table ${
+                                      order.table
+                                    }</span>
+                                    <span class="history-date"><i class="far fa-clock"></i> ${
+                                      order.time
+                                    }</span>
+                                </div>
+                            </div>
+                            <div class="history-items">${itemsHTML}</div>
+                            <div class="history-total">
+                                <span>Total:</span>
+                                <span>$${order.total.toFixed(2)}</span>
+                            </div>
+                        </div>`;
+            });
+
+            container.innerHTML = historyHTML;
+            countElement.textContent = `${filteredOrders.length} ${
+              filteredOrders.length === 1 ? "Order" : "Orders"
+            }`;
+
+            document
+              .querySelectorAll(".history-item[data-token]")
+              .forEach((item) => {
+                item.addEventListener("click", (e) => {
+                  const token = e.currentTarget.dataset.token;
+                  this.showBillModal(token);
+                });
+              });
+          }
+        },
+
+        showBillModal: function (token) {
+          let order = this.allOrders.find((order) => order.token === token);
+          if (!order) {
+            order = this.allHistory.find((order) => order.token === token);
+          }
+          if (!order) {
+            order = this.allTimeHistory.find((order) => order.token === token);
+          }
+
+          // Also check menu database
+          if (!order) {
+            const menuDatabase = localStorage.getItem("menuDatabase");
+            if (menuDatabase) {
+              try {
+                const menuData = JSON.parse(menuDatabase);
+                if (menuData.orders) {
+                  order = menuData.orders.find((o) => o.token === token);
+                }
+              } catch (error) {
+                console.error("Error checking menu database for order:", error);
+              }
+            }
+          }
+
+          if (!order) return;
+
+          const billContent = document.getElementById("bill-content");
+          if (!billContent) return;
+
+          let itemsHTML = "";
+          let subtotal = 0;
+
+          order.items.forEach((item) => {
+            const itemTotal = item.price * item.quantity;
+            subtotal += itemTotal;
+            itemsHTML += `<div class="bill-row">
+                        <div>
+                            <div>${item.name} x${item.quantity}</div>
+                            <div style="font-size: 12px; color: #666;">$${item.price.toFixed(
+                              2
+                            )} each</div>
+                        </div>
+                        <div>$${itemTotal.toFixed(2)}</div>
+                    </div>`;
+          });
+
+          const tax = subtotal * 0.1;
+          const total = subtotal + tax;
+
+          const billHTML = `<div style="text-align: center; margin-bottom: 20px;">
+                    <div><strong>Token:</strong> ${order.token}</div>
+                    <div><strong>Table:</strong> ${order.table}</div>
+                    <div><strong>Date:</strong> ${order.date} ${
+            order.time
+          }</div>
+                    <div><strong>Status:</strong> ${order.status}</div>
+                </div>
+                <div style="border-top: 2px solid #eee; padding-top: 15px;">
+                    ${itemsHTML}
+                    <div class="bill-row"><div>Subtotal</div><div>$${subtotal.toFixed(
+                      2
+                    )}</div></div>
+                    <div class="bill-row"><div>Tax (10%)</div><div>$${tax.toFixed(
+                      2
+                    )}</div></div>
+                    <div class="bill-row total"><div>TOTAL</div><div>$${total.toFixed(
+                      2
+                    )}</div></div>
+                </div>
+                <div style="text-align: center; margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 5px;">
+                    <i class="fas fa-info-circle"></i> This is a digital invoice. Please show this to the cashier.
+                </div>`;
+
+          billContent.innerHTML = billHTML;
+          const billModal = document.getElementById("bill-modal");
+          if (billModal) {
+            billModal.classList.add("active");
+            document.body.style.overflow = "hidden";
+          }
+        },
+
+        hideBillModal: function () {
+          const billModal = document.getElementById("bill-modal");
+          if (billModal) {
+            billModal.classList.remove("active");
+            document.body.style.overflow = "auto";
+          }
+        },
+
+        showOrderDetailsModal: function (token) {
+          let order = this.allOrders.find((order) => order.token === token);
+
+          // Also check menu database
+          if (!order) {
+            const menuDatabase = localStorage.getItem("menuDatabase");
+            if (menuDatabase) {
+              try {
+                const menuData = JSON.parse(menuDatabase);
+                if (menuData.orders) {
+                  order = menuData.orders.find((o) => o.token === token);
+                }
+              } catch (error) {
+                console.error("Error checking menu database for order:", error);
+              }
+            }
+          }
+
+          if (!order) return;
+
+          const detailsContent = document.getElementById(
+            "order-details-content"
+          );
+          if (!detailsContent) return;
+
+          let itemsHTML = "";
+
+          order.items.forEach((item) => {
+            const itemTotal = item.price * item.quantity;
+            itemsHTML += `<div class="bill-row">
+                        <div><div><strong>${item.name}</strong> x${
+              item.quantity
+            }</div>
+                        <div style="font-size: 12px; color: #666;">$${item.price.toFixed(
+                          2
+                        )} each</div></div>
+                        <div>$${itemTotal.toFixed(2)}</div>
+                    </div>`;
+          });
+
+          const statusColor =
+            order.status === "Preparing"
+              ? "#f39c12"
+              : order.status === "Ready"
+              ? "#27ae60"
+              : "#e74c3c";
+          const detailsHTML = `<div class="customer-details">
+                    <h4><i class="fas fa-user"></i> Customer Information</h4>
+                    <div class="detail-row"><div class="detail-label">Table Number:</div><div class="detail-value">${
+                      order.table
+                    }</div></div>
+                    <div class="detail-row"><div class="detail-label">Order Token:</div><div class="detail-value">${
+                      order.token
+                    }</div></div>
+                    <div class="detail-row"><div class="detail-label">Order Time:</div><div class="detail-value">${
+                      order.date
+                    } ${order.time}</div></div>
+                    <div class="detail-row"><div class="detail-label">Order Status:</div>
+                    <div class="detail-value" style="color: ${statusColor}"><strong>${
+            order.status
+          }</strong></div></div>
+                </div>
+                <h4 style="color: var(--primary-color); margin-bottom: 15px;"><i class="fas fa-utensils"></i> Order Items</h4>
+                ${itemsHTML}
+                <div class="bill-row total"><div>TOTAL AMOUNT</div><div>$${order.total.toFixed(
+                  2
+                )}</div></div>
+                ${
+                  this.currentUserRole === "kitchen" ||
+                  this.currentUserRole === "display"
+                    ? `
+                <div style="margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 5px;">
+                    <div style="display: flex; gap: 10px;">
+                        ${
+                          order.status === "Order Placed"
+                            ? `<button class="order-action-btn ready-btn" onclick="RestaurantSystem.updateOrderStatus('${order.token}', 'Preparing')" style="flex: 1;">
+                            <i class="fas fa-play"></i> Start Preparation
+                        </button>`
+                            : ""
+                        }
+                        ${
+                          order.status === "Preparing"
+                            ? `<button class="order-action-btn ready-btn" onclick="RestaurantSystem.updateOrderStatus('${order.token}', 'Ready')" style="flex: 1;">
+                            <i class="fas fa-check"></i> Mark as Ready
+                        </button>`
+                            : ""
+                        }
+                        ${
+                          order.status === "Ready"
+                            ? `<button class="order-action-btn ready-btn" onclick="RestaurantSystem.updateOrderStatus('${order.token}', 'Completed')" style="flex: 1;">
+                            <i class="fas fa-check-double"></i> Mark as Completed
+                        </button>`
+                            : ""
+                        }
+                    </div>
+                </div>`
+                    : ""
+                }`;
+
+          detailsContent.innerHTML = detailsHTML;
+          const orderDetailsModal = document.getElementById(
+            "order-details-modal"
+          );
+          if (orderDetailsModal) {
+            orderDetailsModal.classList.add("active");
+            document.body.style.overflow = "hidden";
+          }
+        },
+
+        hideOrderDetailsModal: function () {
+          const orderDetailsModal = document.getElementById(
+            "order-details-modal"
+          );
+          if (orderDetailsModal) {
+            orderDetailsModal.classList.remove("active");
+            document.body.style.overflow = "auto";
+          }
+        },
+
+        printBill: function () {
+          try {
+            const printWindow = window.open("", "_blank");
+            const billContent =
+              document.getElementById("bill-content").innerHTML;
+            const headerContent =
+              document.querySelector(".bill-header").innerHTML;
+
+            printWindow.document
+              .write(`<html><head><title>Bill - QR Restaurant</title>
+                      <style>body{font-family:Arial,sans-serif;padding:20px}.bill-header{text-align:center;background-color:#2c3e50;color:white;padding:20px;border-radius:10px;margin-bottom:20px}.bill-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #eee}.bill-row.total{font-weight:bold;border-top:2px solid #000;margin-top:10px}@media print{body{padding:0}}</style>
+                      </head><body><div class="bill-header">${headerContent}</div>${billContent}
+                      <script>window.onload=function(){window.print();window.close()}<\/script></body></html>`);
+            printWindow.document.close();
+          } catch (error) {
+            console.error("Print bill failed:", error);
+            this.showNotification("Print failed. Please try again.");
+          }
+        },
+
+        printOrderDetails: function () {
+          try {
+            const printWindow = window.open("", "_blank");
+            const detailsContent = document.getElementById(
+              "order-details-content"
+            ).innerHTML;
+            const headerContent = document.querySelector(
+              ".order-details-modal .bill-header"
+            ).innerHTML;
+
+            printWindow.document
+              .write(`<html><head><title>Order Details - Kitchen</title>
+                      <style>body{font-family:Arial,sans-serif;padding:20px}.bill-header{text-align:center;background-color:#2c3e50;color:white;padding:20px;border-radius:10px;margin-bottom:20px}.customer-details{background-color:#f8f9fa;padding:15px;border-radius:5px;margin-bottom:20px}.bill-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #eee}.bill-row.total{font-weight:bold;border-top:2px solid #000;margin-top:10px}@media print{body{padding:0}}</style>
+                      </head><body><div class="bill-header">${headerContent}</div>${detailsContent}
+                      <script>window.onload=function(){window.print();window.close()}<\/script></body></html>`);
+            printWindow.document.close();
+          } catch (error) {
+            console.error("Print order details failed:", error);
+            this.showNotification("Print failed. Please try again.");
+          }
+        },
+
+        showNotification: function (message) {
+          const notification = document.getElementById("notification");
+          const notificationText = document.getElementById("notification-text");
+
+          if (!notification || !notificationText) return;
+
+          notificationText.textContent = message;
+          notification.classList.add("show");
+
+          setTimeout(() => {
+            notification.classList.remove("show");
+          }, 3000);
+        },
+
+        cleanupOldData: function (force = false) {
+          const today = new Date();
+          const thirtyDaysAgo = new Date();
+          thirtyDaysAgo.setDate(today.getDate() - 30);
+
+          // Keep only orders from last 30 days in allHistory
+          this.allHistory = this.allHistory.filter((order) => {
+            const orderDate = new Date(order.date);
+            return orderDate >= thirtyDaysAgo;
+          });
+
+          // Mark old orders as archived in allTimeHistory
+          this.allTimeHistory.forEach((order) => {
+            const orderDate = new Date(order.date);
+            if (orderDate < thirtyDaysAgo) {
+              order.archived = true;
+            }
+          });
+
+          if (force) {
+            this.allTimeHistory = this.allTimeHistory.filter(
+              (order) => !order.archived
+            );
+            this.saveDatabase();
+            this.showNotification("Old data cleaned up successfully!");
+          }
+        },
+
+        clearOldHistory: function () {
+          if (
+            confirm(
+              "This will remove all order history older than 30 days. Continue?"
+            )
+          ) {
+            this.cleanupOldData(true);
+            this.loadOrderHistory();
+            this.showNotification("Old history cleared successfully!");
+          }
+        },
+
+        exportDatabaseJSON: function () {
+          try {
+            const dataStr = JSON.stringify(this.database, null, 2);
+            const dataBlob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(dataBlob);
+
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `restaurant-database-${
+              new Date().toISOString().split("T")[0]
+            }.json`;
+            link.click();
+
+            this.showNotification("Database exported successfully!");
+          } catch (error) {
+            console.error("Export failed:", error);
+            this.showNotification("Export failed. Please try again.");
+          }
+        },
+
+        exportHistoryJSON: function () {
+          try {
+            const historyData = {
+              history: this.allHistory,
+              allTimeHistory: this.allTimeHistory,
+              exportDate: new Date().toISOString(),
+              totalOrders: this.allTimeHistory.length,
+              totalRevenue: this.allTimeHistory.reduce(
+                (sum, order) => sum + order.total,
+                0
+              ),
+              tables: this.tables,
+              menuPagePath: this.menuPagePath,
+              dateRange: {
+                start:
+                  this.allTimeHistory.length > 0
+                    ? this.allTimeHistory[this.allTimeHistory.length - 1].date
+                    : new Date().toISOString().split("T")[0],
+                end:
+                  this.allTimeHistory.length > 0
+                    ? this.allTimeHistory[0].date
+                    : new Date().toISOString().split("T")[0],
+              },
+            };
+
+            const dataStr = JSON.stringify(historyData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(dataBlob);
+
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `restaurant-history-${
+              new Date().toISOString().split("T")[0]
+            }.json`;
+            link.click();
+
+            this.showNotification("History data exported successfully!");
+          } catch (error) {
+            console.error("Export history failed:", error);
+            this.showNotification("Export failed. Please try again.");
+          }
+        },
+
+        importHistoryJSON: function (file) {
+          if (!file) return;
+
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            try {
+              const data = JSON.parse(e.target.result);
+
+              if (
+                confirm(
+                  "This will merge imported history data with existing data. Continue?"
+                )
+              ) {
+                // Merge history data intelligently
+                if (data.history) {
+                  data.history.forEach((importedOrder) => {
+                    if (
+                      !this.allHistory.find(
+                        (o) => o.token === importedOrder.token
+                      )
+                    ) {
+                      this.allHistory.push(importedOrder);
+                    }
+                  });
+                }
+
+                if (data.allTimeHistory) {
+                  data.allTimeHistory.forEach((importedOrder) => {
+                    if (
+                      !this.allTimeHistory.find(
+                        (o) => o.token === importedOrder.token
+                      )
+                    ) {
+                      this.allTimeHistory.push(importedOrder);
+                    }
+                  });
+                }
+
+                if (data.menuPagePath) {
+                  this.menuPagePath = data.menuPagePath;
+                  this.database.settings.qrCodePath = this.menuPagePath;
+                }
+
+                this.saveDatabase();
+                this.updateAllViews();
+                this.showNotification("History data imported successfully!");
+              }
+            } catch (error) {
+              this.showNotification(
+                "Error importing history data. Please check file format."
+              );
+              console.error("Import error:", error);
+            }
+          };
+          reader.readAsText(file);
+        },
+
+        importDatabase: function (file) {
+          if (!file) return;
+
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            try {
+              const importedDatabase = JSON.parse(e.target.result);
+
+              if (
+                confirm(
+                  "This will replace current database with imported data. Continue?"
+                )
+              ) {
+                this.database = importedDatabase;
+
+                // Update system state from imported database
+                if (this.database.orders) this.allOrders = this.database.orders;
+                if (this.database.history)
+                  this.allTimeHistory = this.database.history;
+                if (this.database.settings?.tables)
+                  this.tables = this.database.settings.tables;
+                if (this.database.settings?.qrCodePath) {
+                  this.menuPagePath = this.database.settings.qrCodePath;
+                }
+
+                // Recalculate token counter
+                if (this.allTimeHistory.length > 0) {
+                  const maxToken = Math.max(
+                    ...this.allTimeHistory.map((o) => parseInt(o.token))
+                  );
+                  this.tokenCounter = maxToken + 1;
+                }
+
+                this.saveDatabase();
+                this.updateAllViews();
+                this.showNotification("Database imported successfully!");
+              }
+            } catch (error) {
+              this.showNotification(
+                "Error importing database. Please check file format."
+              );
+              console.error("Import error:", error);
+            }
+          };
+          reader.readAsText(file);
+        },
+
+        backupToCloud: function () {
+          // Simulated cloud backup
+          try {
+            const backupData = {
+              ...this.database,
+              backupDate: new Date().toISOString(),
+            };
+
+            localStorage.setItem(
+              "restaurantBackup",
+              JSON.stringify(backupData)
+            );
+            this.showNotification("Database backed up locally!");
+          } catch (error) {
+            console.error("Backup failed:", error);
+            this.showNotification("Backup failed. Please try again.");
+          }
+        },
+
+        generateSampleData: function () {
+          if (this.allOrders.length === 0 && this.allHistory.length === 0) {
+            const sampleOrders = [
+              {
+                token: "1001",
+                table: "05",
+                date: new Date().toISOString().split("T")[0],
+                time: "12:30 PM",
+                timestamp: new Date().getTime() - 1800000,
+                status: "Order Placed",
+                items: [
+                  { name: "Margherita Pizza", price: 12.99, quantity: 1 },
+                  { name: "Garlic Bread", price: 4.99, quantity: 2 },
+                  { name: "Coca Cola", price: 2.99, quantity: 2 },
+                ],
+                total: 28.95,
+              },
+              {
+                token: "1002",
+                table: "03",
+                date: new Date().toISOString().split("T")[0],
+                time: "1:15 PM",
+                timestamp: new Date().getTime() - 900000,
+                status: "Preparing",
+                items: [
+                  { name: "Chicken Burger", price: 10.99, quantity: 2 },
+                  { name: "French Fries", price: 3.99, quantity: 1 },
+                  { name: "Lemonade", price: 3.49, quantity: 2 },
+                ],
+                total: 32.45,
+              },
+              {
+                token: "1003",
+                table: "07",
+                date: new Date().toISOString().split("T")[0],
+                time: "11:45 AM",
+                timestamp: new Date().getTime() - 7200000,
+                status: "Ready",
+                items: [
+                  { name: "Spaghetti Carbonara", price: 14.99, quantity: 1 },
+                  { name: "Caesar Salad", price: 8.99, quantity: 1 },
+                  { name: "Red Wine", price: 6.99, quantity: 1 },
+                ],
+                total: 30.97,
+              },
+            ];
+
+            this.allOrders = sampleOrders;
+            this.allHistory = sampleOrders.filter((o) => o.status === "Ready");
+            this.allTimeHistory = [...sampleOrders];
+            this.tokenCounter = 1004;
+            this.saveDatabase();
+          }
+        },
+
+        startAutoRefresh: function () {
+          setInterval(() => {
+            if (this.currentUserRole === "display") {
+              this.loadDisplayOrders();
+            }
+            if (this.currentUserRole === "kitchen") {
+              this.loadLiveOrders();
+              this.updateAllStats();
+            }
+            if (this.currentUserRole === "admin") {
+              this.updateAdminStats();
+            }
+            if (
+              this.currentUserRole === "customer" &&
+              document
+                .getElementById("dashboard-page")
+                ?.classList.contains("active")
+            ) {
+              this.updateAllStats();
+              this.loadRecentOrders();
+            }
+          }, 10000); // 10 seconds
+        },
+      };
+
+      // Initialize the system
+      document.addEventListener("DOMContentLoaded", function () {
+        RestaurantSystem.init();
+      });
+
+      // Make functions globally accessible for menu.html
+      window.RestaurantSystem = RestaurantSystem;
+      window.placeOrder = function (items, table) {
+        return RestaurantSystem.placeOrder(items, table);
+      };
+
+      window.showNotification = function (message) {
+        RestaurantSystem.showNotification(message);
+      };
+
+      window.showMenuPage = function () {
+        RestaurantSystem.showMenuPage();
+      };
+
+      // Function to check token status
+      window.checkTokenStatus = function (token) {
+        // Check in main database
+        let order = RestaurantSystem.allOrders.find((o) => o.token === token);
+        if (!order) {
+          order = RestaurantSystem.allHistory.find((o) => o.token === token);
+        }
+        if (!order) {
+          order = RestaurantSystem.allTimeHistory.find(
+            (o) => o.token === token
+          );
+        }
+
+        // Also check menu database
+        if (!order) {
+          const menuDatabase = localStorage.getItem("menuDatabase");
+          if (menuDatabase) {
+            try {
+              const menuData = JSON.parse(menuDatabase);
+              if (menuData.orders) {
+                order = menuData.orders.find((o) => o.token === token);
+              }
+            } catch (error) {
+              console.error("Error checking menu database for token:", error);
+            }
+          }
+        }
+
+        return order ? order.status : "Order not found";
+      };
+
+      // NEW: Export history to PDF function
+      window.exportHistoryToPDF = function (detailed = false) {
+        return RestaurantSystem.exportHistoryToPDF(detailed);
+      };
+    </script>
+  </body>
+</html>

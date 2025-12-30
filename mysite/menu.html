@@ -1,0 +1,2472 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Restaurant Menu with History</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      :root {
+        --primary-color: #2c3e50;
+        --secondary-color: #e74c3c;
+        --accent-color: #f39c12;
+        --light-color: #ecf0f1;
+        --dark-color: #2c3e50;
+        --success-color: #27ae60;
+        --warning-color: #f1c40f;
+        --info-color: #3498db;
+        --danger-color: #e74c3c;
+        --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        --border-radius: 10px;
+      }
+
+      /* Add this to your existing CSS style section */
+      body {
+        background: linear-gradient(135deg, #f5f7fa 0%, #e0e0e0 100%);
+        color: #000;
+        min-height: 100vh;
+        /* Add background image with dark overlay */
+        background-image: linear-gradient(
+            rgba(0, 0, 0, 0.85),
+            rgba(0, 0, 0, 0.9)
+          ),
+          url("./photos/manu.png");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+        background-blend-mode: overlay;
+        position: relative;
+      }
+
+      /* Add a dark overlay for better readability */
+      body::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: -1;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+        position: relative;
+        z-index: 1;
+      }
+
+      /* Header with Navigation */
+      .header {
+        background: linear-gradient(
+          135deg,
+          rgba(44, 62, 80, 0.95),
+          rgba(26, 37, 47, 0.95)
+        );
+        color: white;
+        padding: 20px;
+        border-radius: 0 0 var(--border-radius) var(--border-radius);
+        box-shadow: var(--shadow);
+        margin-bottom: 30px;
+        position: relative;
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .header::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: linear-gradient(
+          90deg,
+          var(--secondary-color),
+          var(--accent-color)
+        );
+      }
+
+      .logo {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
+        margin-bottom: 15px;
+      }
+
+      .logo i {
+        font-size: 32px;
+        color: var(--accent-color);
+      }
+
+      .logo h1 {
+        font-size: 28px;
+        font-weight: 700;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+      }
+
+      .session-info {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        flex-wrap: wrap;
+        margin-top: 15px;
+      }
+
+      .table-info,
+      .token-display {
+        background-color: rgba(255, 255, 255, 0.1);
+        padding: 10px 20px;
+        border-radius: 50px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+      }
+
+      .table-info i {
+        color: var(--accent-color);
+        font-size: 18px;
+      }
+
+      .token-display i {
+        color: var(--success-color);
+        font-size: 18px;
+      }
+
+      /* Navigation Buttons - SIMPLIFIED */
+      .nav-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        margin-top: 20px;
+        flex-wrap: wrap;
+      }
+
+      .nav-btn {
+        padding: 12px 24px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        border-radius: 30px;
+        color: white;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 15px;
+        backdrop-filter: blur(10px);
+      }
+
+      .nav-btn:hover {
+        background: rgba(255, 255, 255, 0.15);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+      }
+
+      .nav-btn.active {
+        background: linear-gradient(135deg, var(--secondary-color), #c0392b);
+        border-color: var(--secondary-color);
+        box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
+      }
+
+      /* Cart Count Badge */
+      .cart-count-badge {
+        background: var(--secondary-color);
+        color: white;
+        border-radius: 50%;
+        width: 22px;
+        height: 22px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: bold;
+        margin-left: 5px;
+      }
+
+      /* Main Content Sections */
+      .content-section {
+        display: none;
+        animation: fadeIn 0.5s;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .content-section.active {
+        display: block;
+      }
+
+      /* Main Menu Categories */
+      .main-menu {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 30px;
+        margin-bottom: 30px;
+      }
+
+      .category-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: var(--border-radius);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        overflow: hidden;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        cursor: pointer;
+        position: relative;
+        height: 280px;
+        backdrop-filter: blur(5px);
+      }
+
+      .category-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        background: rgba(255, 255, 255, 1);
+      }
+
+      .category-card:hover .category-image {
+        transform: scale(1.05);
+      }
+
+      .category-image {
+        height: 180px;
+        background-size: cover;
+        background-position: center;
+        position: relative;
+        overflow: hidden;
+        transition: transform 0.5s ease;
+      }
+
+      .category-image::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          to bottom,
+          transparent 0%,
+          rgba(0, 0, 0, 0.6) 100%
+        );
+      }
+
+      .category-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          to bottom,
+          rgba(0, 0, 0, 0.3) 0%,
+          rgba(0, 0, 0, 0.7) 100%
+        );
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        padding: 20px;
+        color: white;
+      }
+
+      .category-overlay .category-title {
+        color: white;
+        font-size: 22px;
+        margin-bottom: 5px;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+      }
+
+      .category-overlay .category-description {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 13px;
+        margin-bottom: 10px;
+      }
+
+      .category-count {
+        font-size: 13px;
+        color: white;
+        background: rgba(44, 62, 80, 0.9);
+        padding: 4px 12px;
+        border-radius: 20px;
+        display: inline-block;
+        font-weight: 600;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      /* Menu Header */
+      .menu-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+        gap: 20px;
+        padding: 25px;
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: var(--border-radius);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        border-left: 5px solid var(--accent-color);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .menu-title {
+        font-size: 32px;
+        color: var(--primary-color);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 700;
+      }
+
+      .menu-title i {
+        color: var(--secondary-color);
+        font-size: 28px;
+      }
+
+      .category-filter {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .category-btn {
+        padding: 12px 24px;
+        background-color: rgba(255, 255, 255, 0.9);
+        border: 2px solid rgba(224, 224, 224, 0.8);
+        border-radius: 30px;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-weight: 600;
+        color: #555;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 15px;
+        backdrop-filter: blur(5px);
+      }
+
+      .category-btn i {
+        font-size: 16px;
+      }
+
+      .category-btn.active {
+        background: linear-gradient(135deg, var(--primary-color), #1a252f);
+        color: white;
+        border-color: var(--primary-color);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(44, 62, 80, 0.4);
+      }
+
+      .category-btn:hover:not(.active) {
+        background-color: rgba(248, 249, 250, 0.95);
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+      }
+
+      /* Menu Content */
+      .menu-content {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 30px;
+      }
+
+      @media (max-width: 1024px) {
+        .menu-content {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* Menu Items */
+      .menu-items {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 25px;
+        height: fit-content;
+      }
+
+      .menu-item {
+        background-color: rgba(255, 255, 255, 0.95);
+        border-radius: var(--border-radius);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        overflow: hidden;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        position: relative;
+        cursor: pointer;
+        backdrop-filter: blur(5px);
+      }
+
+      .menu-item:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        background: rgba(255, 255, 255, 1);
+      }
+
+      .item-image {
+        height: 200px;
+        background-size: cover;
+        background-position: center;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .item-image::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          to bottom,
+          transparent 0%,
+          rgba(0, 0, 0, 0.3) 100%
+        );
+      }
+
+      .item-price {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        background: linear-gradient(135deg, var(--secondary-color), #c0392b);
+        color: white;
+        padding: 10px 20px;
+        font-weight: 700;
+        font-size: 18px;
+        border-radius: var(--border-radius) 0 0 0;
+        box-shadow: -2px -2px 8px rgba(0, 0, 0, 0.3);
+      }
+
+      .item-details {
+        padding: 25px;
+      }
+
+      .item-name {
+        font-size: 22px;
+        margin-bottom: 12px;
+        color: var(--dark-color);
+        font-weight: 700;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .item-category {
+        font-size: 12px;
+        background-color: rgba(240, 247, 255, 0.9);
+        color: var(--info-color);
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-weight: 600;
+        border: 1px solid rgba(52, 152, 219, 0.2);
+      }
+
+      .item-description {
+        color: #444;
+        margin-bottom: 24px;
+        line-height: 1.6;
+        font-size: 14.5px;
+        min-height: 60px;
+      }
+
+      .item-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 15px;
+        border-top: 1px solid rgba(240, 240, 240, 0.5);
+      }
+
+      .quantity-controls {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background-color: rgba(248, 249, 250, 0.8);
+        padding: 8px 12px;
+        border-radius: 30px;
+        backdrop-filter: blur(5px);
+        border: 1px solid rgba(224, 224, 224, 0.5);
+      }
+
+      .quantity-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background-color: white;
+        border: 2px solid rgba(224, 224, 224, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-weight: bold;
+        font-size: 18px;
+        transition: all 0.2s;
+        color: var(--primary-color);
+      }
+
+      .quantity-btn:hover {
+        background-color: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+        transform: scale(1.1);
+      }
+
+      .quantity {
+        font-weight: 700;
+        font-size: 18px;
+        min-width: 30px;
+        text-align: center;
+        color: var(--primary-color);
+      }
+
+      .add-to-cart {
+        background: linear-gradient(135deg, var(--primary-color), #1a252f);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 30px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 15px;
+        box-shadow: 0 4px 12px rgba(44, 62, 80, 0.4);
+      }
+
+      .add-to-cart:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(44, 62, 80, 0.5);
+        background: linear-gradient(135deg, #1a252f, var(--primary-color));
+      }
+
+      .add-to-cart.added {
+        background: linear-gradient(135deg, var(--success-color), #219653);
+        animation: pulse 0.5s;
+      }
+
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      /* Order Summary */
+      .order-summary-container {
+        position: sticky;
+        top: 20px;
+        height: fit-content;
+      }
+
+      .order-summary {
+        background: linear-gradient(
+          135deg,
+          rgba(255, 255, 255, 0.95),
+          rgba(248, 249, 250, 0.95)
+        );
+        border-radius: var(--border-radius);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        padding: 30px;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        position: relative;
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+      }
+
+      .order-summary::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: linear-gradient(
+          90deg,
+          var(--secondary-color),
+          var(--accent-color)
+        );
+      }
+
+      .summary-header {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 25px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid rgba(240, 240, 240, 0.5);
+      }
+
+      .summary-header i {
+        font-size: 28px;
+        color: var(--primary-color);
+        background: linear-gradient(
+          135deg,
+          rgba(240, 247, 255, 0.9),
+          rgba(227, 242, 253, 0.9)
+        );
+        padding: 12px;
+        border-radius: 12px;
+        border: 1px solid rgba(52, 152, 219, 0.2);
+      }
+
+      .summary-header h3 {
+        font-size: 24px;
+        color: var(--primary-color);
+        font-weight: 700;
+      }
+
+      .cart-items {
+        max-height: 350px;
+        overflow-y: auto;
+        margin-bottom: 25px;
+        padding-right: 10px;
+      }
+
+      .cart-items::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .cart-items::-webkit-scrollbar-track {
+        background: rgba(241, 241, 241, 0.5);
+        border-radius: 10px;
+      }
+
+      .cart-items::-webkit-scrollbar-thumb {
+        background: var(--primary-color);
+        border-radius: 10px;
+      }
+
+      .cart-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 0;
+        border-bottom: 1px solid rgba(240, 240, 240, 0.5);
+        transition: all 0.2s;
+      }
+
+      .cart-item:hover {
+        background-color: rgba(249, 249, 249, 0.8);
+        border-radius: 8px;
+        padding: 15px 10px;
+      }
+
+      .cart-item:last-child {
+        border-bottom: none;
+      }
+
+      .cart-item-details {
+        flex: 1;
+      }
+
+      .cart-item-name {
+        font-weight: 600;
+        color: var(--dark-color);
+        margin-bottom: 5px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .cart-item-image {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        object-fit: cover;
+        border: 1px solid rgba(238, 238, 238, 0.8);
+      }
+
+      .cart-item-quantity {
+        font-size: 12px;
+        color: #666;
+        background-color: rgba(240, 240, 240, 0.8);
+        padding: 2px 8px;
+        border-radius: 10px;
+        margin-left: 8px;
+      }
+
+      .cart-item-price {
+        font-weight: 700;
+        color: var(--secondary-color);
+        font-size: 16px;
+      }
+
+      .cart-item-actions {
+        display: flex;
+        gap: 10px;
+        margin-left: 15px;
+      }
+
+      .cart-item-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 14px;
+      }
+
+      .cart-increase {
+        background: linear-gradient(
+          135deg,
+          rgba(232, 245, 233, 0.9),
+          rgba(200, 230, 201, 0.9)
+        );
+        color: var(--success-color);
+      }
+
+      .cart-decrease {
+        background: linear-gradient(
+          135deg,
+          rgba(255, 235, 238, 0.9),
+          rgba(255, 205, 210, 0.9)
+        );
+        color: var(--danger-color);
+      }
+
+      .cart-remove {
+        background: linear-gradient(
+          135deg,
+          rgba(245, 245, 245, 0.9),
+          rgba(238, 238, 238, 0.9)
+        );
+        color: #666;
+      }
+
+      .cart-item-btn:hover {
+        transform: scale(1.1);
+      }
+
+      .cart-total {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 22px;
+        font-weight: 700;
+        padding: 25px 0;
+        border-top: 2px solid rgba(238, 238, 238, 0.5);
+        margin-top: 10px;
+        background: linear-gradient(
+          135deg,
+          rgba(248, 249, 250, 0.9),
+          rgba(255, 255, 255, 0.9)
+        );
+        border-radius: var(--border-radius);
+        padding: 20px;
+        backdrop-filter: blur(5px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .total-label {
+        color: var(--dark-color);
+      }
+
+      .total-amount {
+        color: var(--secondary-color);
+        font-size: 26px;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+      }
+
+      /* Order Buttons */
+      .order-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 25px;
+      }
+
+      .order-btn {
+        padding: 16px;
+        border-radius: var(--border-radius);
+        font-weight: 700;
+        cursor: pointer;
+        border: none;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        font-size: 16px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        width: 100%;
+      }
+
+      .order-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
+      }
+
+      .order-btn:active {
+        transform: translateY(-1px);
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, var(--success-color), #219653);
+        color: white;
+      }
+
+      .btn-danger {
+        background: linear-gradient(135deg, var(--danger-color), #c0392b);
+        color: white;
+      }
+
+      .order-btn:disabled {
+        background: rgba(204, 204, 204, 0.8);
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+
+      /* Special Instructions */
+      .special-instructions {
+        margin-top: 25px;
+        padding-top: 20px;
+        border-top: 1px solid rgba(238, 238, 238, 0.5);
+      }
+
+      .instructions-label {
+        display: block;
+        margin-bottom: 10px;
+        font-weight: 600;
+        color: var(--dark-color);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .instructions-textarea {
+        width: 100%;
+        padding: 15px;
+        border: 2px solid rgba(224, 224, 224, 0.8);
+        border-radius: var(--border-radius);
+        resize: vertical;
+        min-height: 100px;
+        font-family: inherit;
+        font-size: 14px;
+        transition: all 0.3s;
+        background: linear-gradient(
+          135deg,
+          rgba(255, 255, 255, 0.9),
+          rgba(248, 249, 250, 0.9)
+        );
+        backdrop-filter: blur(5px);
+      }
+
+      .instructions-textarea:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.2);
+        background: rgba(255, 255, 255, 1);
+      }
+
+      /* Empty Cart State */
+      .empty-cart {
+        text-align: center;
+        padding: 50px 20px;
+        color: #888;
+      }
+
+      .empty-cart i {
+        font-size: 64px;
+        color: rgba(224, 224, 224, 0.8);
+        margin-bottom: 20px;
+      }
+
+      .empty-cart h4 {
+        font-size: 22px;
+        margin-bottom: 10px;
+        color: #666;
+        font-weight: 600;
+      }
+
+      /* Order Confirmation Modal */
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        animation: fadeIn 0.3s;
+        padding: 20px;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      .modal {
+        background: linear-gradient(
+          135deg,
+          rgba(255, 255, 255, 0.95),
+          rgba(248, 249, 250, 0.95)
+        );
+        border-radius: var(--border-radius);
+        width: 100%;
+        max-width: 600px;
+        overflow: hidden;
+        animation: slideUp 0.5s;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+        border: 2px solid rgba(44, 62, 80, 0.3);
+        backdrop-filter: blur(10px);
+      }
+
+      @keyframes slideUp {
+        from {
+          transform: translateY(50px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      .modal-header {
+        background: linear-gradient(135deg, var(--success-color), #219653);
+        color: white;
+        padding: 30px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .modal-header::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: linear-gradient(
+          90deg,
+          var(--secondary-color),
+          var(--accent-color)
+        );
+      }
+
+      .modal-header i {
+        font-size: 64px;
+        margin-bottom: 20px;
+        animation: bounce 1s infinite;
+      }
+
+      @keyframes bounce {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-10px);
+        }
+      }
+
+      .modal-header h3 {
+        font-size: 28px;
+        margin-bottom: 10px;
+        font-weight: 700;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      .modal-content {
+        padding: 30px;
+        text-align: center;
+      }
+
+      .modal-token {
+        font-size: 36px;
+        font-weight: 800;
+        color: var(--primary-color);
+        margin: 20px 0;
+        padding: 20px;
+        background: linear-gradient(
+          135deg,
+          rgba(248, 249, 250, 0.9),
+          rgba(233, 236, 239, 0.9)
+        );
+        border-radius: var(--border-radius);
+        letter-spacing: 3px;
+        border: 2px dashed rgba(44, 62, 80, 0.5);
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(5px);
+      }
+
+      .modal-message {
+        color: #555;
+        line-height: 1.6;
+        margin-bottom: 25px;
+        font-size: 16px;
+      }
+
+      .modal-details {
+        background: linear-gradient(
+          135deg,
+          rgba(248, 249, 250, 0.9),
+          rgba(233, 236, 239, 0.9)
+        );
+        padding: 20px;
+        border-radius: var(--border-radius);
+        margin: 20px 0;
+        text-align: left;
+        border: 1px solid rgba(224, 224, 224, 0.5);
+        backdrop-filter: blur(5px);
+      }
+
+      .modal-detail-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid rgba(238, 238, 238, 0.5);
+      }
+
+      .modal-detail-item:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: none;
+      }
+
+      .modal-actions {
+        display: flex;
+        gap: 15px;
+        margin-top: 25px;
+      }
+
+      .modal-btn {
+        flex: 1;
+        padding: 16px;
+        border-radius: var(--border-radius);
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        transition: all 0.3s;
+        font-size: 16px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      }
+
+      .modal-btn-primary {
+        background: linear-gradient(135deg, var(--primary-color), #1a252f);
+        color: white;
+      }
+
+      .modal-btn-secondary {
+        background: linear-gradient(
+          135deg,
+          rgba(255, 255, 255, 0.9),
+          rgba(248, 249, 250, 0.9)
+        );
+        color: #333;
+        border: 2px solid rgba(224, 224, 224, 0.8);
+      }
+
+      .modal-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+      }
+
+      /* Dashboard Sync Status */
+      .sync-status {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(
+          135deg,
+          rgba(39, 174, 96, 0.95),
+          rgba(33, 150, 83, 0.95)
+        );
+        color: white;
+        padding: 12px 20px;
+        border-radius: 30px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        z-index: 1000;
+        animation: slideInRight 0.5s ease-out;
+        max-width: 350px;
+        display: none;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      @keyframes slideInRight {
+        from {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+
+      .sync-status i {
+        font-size: 20px;
+        animation: spin 2s linear infinite;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .sync-status.success {
+        background: linear-gradient(
+          135deg,
+          rgba(39, 174, 96, 0.95),
+          rgba(33, 150, 83, 0.95)
+        );
+      }
+
+      .sync-status.error {
+        background: linear-gradient(
+          135deg,
+          rgba(231, 76, 60, 0.95),
+          rgba(192, 57, 43, 0.95)
+        );
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        .main-menu {
+          grid-template-columns: 1fr;
+        }
+
+        .menu-header {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .category-filter {
+          width: 100%;
+          justify-content: center;
+        }
+
+        .menu-items {
+          grid-template-columns: 1fr;
+        }
+
+        .modal-actions {
+          flex-direction: column;
+        }
+
+        .order-summary-container {
+          position: static;
+        }
+
+        .nav-buttons {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .nav-btn {
+          justify-content: center;
+        }
+
+        .sync-status {
+          top: 80px;
+          right: 10px;
+          left: 10px;
+          max-width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Header with Navigation - SIMPLIFIED -->
+    <div class="header">
+      <div class="container">
+        <div class="logo">
+          <i class="fas fa-utensils"></i>
+          <h1>QR Restaurant Ordering - Menu</h1>
+        </div>
+        <div class="session-info">
+          <div class="table-info">
+            <i class="fas fa-table"></i>
+            <span>Table: <strong id="table-number">Loading...</strong></span>
+          </div>
+          <div class="token-display" id="token-display" style="display: none">
+            <i class="fas fa-hashtag"></i>
+            <span>Token: <strong id="current-token">---</strong></span>
+          </div>
+        </div>
+        <div class="nav-buttons">
+          <button class="nav-btn active" data-section="menu">
+            <i class="fas fa-th-large"></i> Menu Categories
+          </button>
+          <button class="nav-btn" data-section="cart">
+            <i class="fas fa-shopping-cart"></i> Current Order
+            <span class="cart-count-badge">0</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dashboard Sync Status -->
+    <div class="sync-status" id="sync-status">
+      <i class="fas fa-sync-alt"></i>
+      <span id="sync-message">Syncing with Dashboard...</span>
+    </div>
+
+    <!-- Main Content Container -->
+    <div class="container">
+      <!-- Menu Categories Section -->
+      <div id="menu-section" class="content-section active">
+        <div class="menu-header">
+          <h2 class="menu-title">
+            <i class="fas fa-th-large"></i> Food Categories
+          </h2>
+        </div>
+
+        <div class="main-menu" id="category-cards">
+          <!-- Category cards will be dynamically loaded here -->
+        </div>
+      </div>
+
+      <!-- Cart/Order Section -->
+      <div id="cart-section" class="content-section">
+        <div class="menu-header">
+          <h2 class="menu-title">
+            <i class="fas fa-shopping-cart"></i> Current Order
+          </h2>
+          <div class="category-filter">
+            <button class="category-btn active" data-category="all">
+              <i class="fas fa-th-large"></i> All Items
+            </button>
+            <button class="category-btn" data-category="starters">
+              <i class="fas fa-utensil-spoon"></i> Starters
+            </button>
+            <button class="category-btn" data-category="mains">
+              <i class="fas fa-drumstick-bite"></i> Main Course
+            </button>
+            <button class="category-btn" data-category="desserts">
+              <i class="fas fa-ice-cream"></i> Desserts
+            </button>
+            <button class="category-btn" data-category="drinks">
+              <i class="fas fa-glass-whiskey"></i> Drinks
+            </button>
+          </div>
+        </div>
+
+        <div class="menu-content">
+          <!-- Menu Items Section -->
+          <div class="menu-items" id="menu-items-container">
+            <!-- Menu items will be dynamically loaded here -->
+          </div>
+
+          <!-- Order Summary Section -->
+          <div class="order-summary-container">
+            <div class="order-summary">
+              <div class="summary-header">
+                <i class="fas fa-shopping-cart"></i>
+                <h3>Order Summary</h3>
+              </div>
+
+              <div class="cart-items" id="cart-items">
+                <!-- Cart items will be dynamically loaded here -->
+                <div class="empty-cart">
+                  <i class="fas fa-shopping-cart"></i>
+                  <h4>Your cart is empty</h4>
+                  <p>Add items from the menu to get started</p>
+                </div>
+              </div>
+
+              <div class="cart-total">
+                <span class="total-label">Total Amount:</span>
+                <span class="total-amount" id="total-amount">$0.00</span>
+              </div>
+
+              <!-- Special Instructions -->
+              <div class="special-instructions">
+                <label class="instructions-label">
+                  <i class="fas fa-edit"></i> Special Instructions
+                </label>
+                <textarea
+                  class="instructions-textarea"
+                  id="special-instructions"
+                  placeholder="Add any special instructions for your order (allergies, preferences, etc.)..."
+                ></textarea>
+              </div>
+
+              <!-- Order Buttons -->
+              <div class="order-buttons">
+                <button
+                  class="order-btn btn-primary"
+                  id="place-order-btn"
+                  disabled
+                >
+                  <i class="fas fa-paper-plane"></i> Place Order Now
+                </button>
+                <button class="order-btn btn-danger" id="cancel-order-btn">
+                  <i class="fas fa-times"></i> Cancel Order
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Order Confirmation Modal - SIMPLIFIED -->
+    <div id="order-modal" class="modal-overlay" style="display: none">
+      <div class="modal">
+        <div class="modal-header">
+          <i class="fas fa-check-circle"></i>
+          <h3>Order Placed Successfully!</h3>
+          <p style="opacity: 0.9; margin-top: 5px">
+            Your order is now being prepared
+          </p>
+        </div>
+        <div class="modal-content">
+          <p class="modal-message">
+            Thank you for your order! Please show this token number to the staff
+            when collecting your food.
+          </p>
+          <div class="modal-token" id="modal-token">TK-00123</div>
+
+          <div class="modal-details" id="order-details">
+            <!-- Order details will be dynamically loaded here -->
+          </div>
+
+          <div class="modal-actions">
+            <button
+              class="modal-btn modal-btn-secondary"
+              id="print-summary-btn"
+            >
+              <i class="fas fa-print"></i> Print Bill
+            </button>
+            <button
+              class="modal-btn modal-btn-primary"
+              id="continue-ordering-btn"
+            >
+              <i class="fas fa-plus-circle"></i> Continue Ordering
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Enhanced Restaurant Menu System
+      const MenuSystem = {
+        currentTable: null,
+        currentToken: null,
+        cart: [],
+        isOrderPlaced: false,
+        currentCategory: null,
+        currentSection: "menu",
+        syncInterval: null,
+        lastSyncedToken: null,
+
+        // Use the same menu items as dashboard system for consistency
+        menuItems: [
+          // Starters (8 items)
+          {
+            id: 1,
+            name: "Margherita Pizza",
+            description:
+              "Hand-tossed pizza with San Marzano tomatoes, fresh mozzarella, basil leaves, and extra virgin olive oil",
+            price: 12.99,
+            category: "starters",
+            image:
+              "https://images.unsplash.com/photo-1604068549290-dea0e4a305ca?w=400&h=250&fit=crop",
+          },
+          {
+            id: 2,
+            name: "Pepperoni Pizza",
+            description:
+              "Classic pizza with pepperoni, mozzarella, and tomato sauce",
+            price: 14.99,
+            category: "starters",
+            image:
+              "https://images.unsplash.com/photo-1628840042765-356cda07504e?w=400&h=250&fit=crop",
+          },
+          {
+            id: 3,
+            name: "Chicken Burger",
+            description:
+              "Grilled chicken breast with lettuce, tomato, and special sauce",
+            price: 10.99,
+            category: "starters",
+            image:
+              "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=250&fit=crop",
+          },
+          {
+            id: 4,
+            name: "Cheeseburger",
+            description:
+              "Beef patty with cheddar cheese, lettuce, tomato, and onion",
+            price: 9.99,
+            category: "starters",
+            image:
+              "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=400&h=250&fit=crop",
+          },
+          {
+            id: 5,
+            name: "French Fries",
+            description: "Crispy golden fries served with ketchup",
+            price: 3.99,
+            category: "starters",
+            image:
+              "https://images.unsplash.com/photo-1576107232684-1279f7b88cf8?w=400&h=250&fit=crop",
+          },
+          {
+            id: 6,
+            name: "Garlic Bread",
+            description: "Freshly baked bread with garlic butter and herbs",
+            price: 4.99,
+            category: "starters",
+            image:
+              "https://images.unsplash.com/photo-1573140247632-f8fd74997d5c?w=400&h=250&fit=crop",
+          },
+          {
+            id: 7,
+            name: "Caesar Salad",
+            description:
+              "Fresh romaine lettuce with croutons and Caesar dressing",
+            price: 8.99,
+            category: "starters",
+            image:
+              "https://images.unsplash.com/photo-1546793665-c74683f339c1?w=400&h=250&fit=crop",
+          },
+          {
+            id: 8,
+            name: "Coca Cola",
+            description: "Refreshing cola drink",
+            price: 2.99,
+            category: "drinks",
+            image:
+              "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400&h=250&fit=crop",
+          },
+          {
+            id: 9,
+            name: "Lemonade",
+            description: "Fresh lemonade with mint",
+            price: 3.49,
+            category: "drinks",
+            image:
+              "https://images.unsplash.com/photo-1621263764928-df1444c5e859?w=400&h=250&fit=crop",
+          },
+          {
+            id: 10,
+            name: "Chocolate Cake",
+            description: "Rich chocolate cake with frosting",
+            price: 6.99,
+            category: "desserts",
+            image:
+              "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&h=250&fit=crop",
+          },
+        ],
+
+        categories: [
+          {
+            id: "starters",
+            name: "Starters",
+            icon: "fas fa-utensil-spoon",
+            description: "Appetizers and starters to begin your meal",
+            image:
+              "https://images.unsplash.com/photo-1547592180-85f173990554?w=400&h=250&fit=crop",
+            count: 8,
+          },
+          {
+            id: "mains",
+            name: "Main Course",
+            icon: "fas fa-drumstick-bite",
+            description: "Main dishes and entrees",
+            image:
+              "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=250&fit=crop",
+            count: 8,
+          },
+          {
+            id: "desserts",
+            name: "Desserts",
+            icon: "fas fa-ice-cream",
+            description: "Sweet treats and desserts",
+            image:
+              "https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?w=400&h=250&fit=crop",
+            count: 6,
+          },
+          {
+            id: "drinks",
+            name: "Drinks",
+            icon: "fas fa-glass-whiskey",
+            description: "Beverages and drinks",
+            image:
+              "https://images.unsplash.com/photo-1621506289937-a8e4df240d0b?w=400&h=250&fit=crop",
+            count: 6,
+          },
+        ],
+
+        init: function () {
+          this.extractQRCodeData();
+          this.setupEventListeners();
+          this.loadMainMenu();
+          this.updateOrderSummary();
+          this.loadFromStorage();
+          this.updateCartCount();
+          this.syncWithDashboard();
+          this.startDashboardSync();
+        },
+
+        loadMainMenu: function () {
+          const container = document.getElementById("category-cards");
+          if (!container) return;
+
+          container.innerHTML = "";
+
+          this.categories.forEach((category) => {
+            const categoryCard = document.createElement("div");
+            categoryCard.className = "category-card";
+            categoryCard.dataset.category = category.id;
+
+            categoryCard.innerHTML = `
+              <div class="category-image" style="background-image: url('${category.image}')">
+                <div class="category-overlay">
+                  <div class="category-title">${category.name}</div>
+                  <div class="category-description">${category.description}</div>
+                  <div class="category-count">${category.count} Items</div>
+                </div>
+              </div>
+            `;
+
+            categoryCard.addEventListener("click", () => {
+              this.showSection("cart");
+              this.currentCategory = category.id;
+              this.loadMenuItems();
+              this.setActiveCategoryButton(category.id);
+            });
+
+            container.appendChild(categoryCard);
+          });
+        },
+
+        showSection: function (section) {
+          document.querySelectorAll(".content-section").forEach((sec) => {
+            sec.classList.remove("active");
+          });
+
+          document.querySelectorAll(".nav-btn").forEach((btn) => {
+            btn.classList.remove("active");
+          });
+
+          document.getElementById(section + "-section").classList.add("active");
+
+          document
+            .querySelector(`.nav-btn[data-section="${section}"]`)
+            .classList.add("active");
+
+          this.currentSection = section;
+
+          if (section === "cart" && !this.currentCategory) {
+            this.currentCategory = "all";
+            this.loadMenuItems();
+          }
+        },
+
+        setActiveCategoryButton: function (categoryId) {
+          document.querySelectorAll(".category-btn").forEach((btn) => {
+            btn.classList.remove("active");
+            if (btn.dataset.category === categoryId) {
+              btn.classList.add("active");
+            }
+          });
+        },
+
+        loadMenuItems: function () {
+          const container = document.getElementById("menu-items-container");
+          if (!container) return;
+
+          container.innerHTML = "";
+
+          let itemsToShow = this.menuItems;
+          if (this.currentCategory && this.currentCategory !== "all") {
+            itemsToShow = this.menuItems.filter(
+              (item) => item.category === this.currentCategory
+            );
+          }
+
+          if (itemsToShow.length < 6 && this.currentCategory !== "all") {
+            const otherItems = this.menuItems
+              .filter((item) => item.category !== this.currentCategory)
+              .slice(0, 6 - itemsToShow.length);
+            itemsToShow = [...itemsToShow, ...otherItems];
+          }
+
+          if (itemsToShow.length % 2 !== 0) {
+            const extraItem = this.menuItems.find(
+              (item) => !itemsToShow.some((i) => i.id === item.id)
+            );
+            if (extraItem) itemsToShow.push(extraItem);
+          }
+
+          itemsToShow.forEach((item) => {
+            const menuItem = document.createElement("div");
+            menuItem.className = "menu-item";
+            menuItem.dataset.id = item.id;
+            menuItem.dataset.category = item.category;
+            menuItem.title = "Click to add to cart";
+
+            menuItem.innerHTML = `
+              <div class="item-image" style="background-image: url('${
+                item.image
+              }')">
+                <div class="item-price">$${item.price.toFixed(2)}</div>
+              </div>
+              <div class="item-details">
+                <div class="item-name">
+                  <span>${item.name}</span>
+                  <span class="item-category">${
+                    item.category.charAt(0).toUpperCase() +
+                    item.category.slice(1)
+                  }</span>
+                </div>
+                <p class="item-description">${item.description}</p>
+                <div class="item-controls">
+                  <div class="quantity-controls">
+                    <button class="quantity-btn minus-btn" data-id="${
+                      item.id
+                    }" onclick="event.stopPropagation()">
+                      <i class="fas fa-minus"></i>
+                    </button>
+                    <span class="quantity" id="quantity-${item.id}">0</span>
+                    <button class="quantity-btn plus-btn" data-id="${
+                      item.id
+                    }" onclick="event.stopPropagation()">
+                      <i class="fas fa-plus"></i>
+                    </button>
+                  </div>
+                  <button class="add-to-cart" data-id="${
+                    item.id
+                  }" onclick="event.stopPropagation()">
+                    <i class="fas fa-cart-plus"></i> Add to Cart
+                  </button>
+                </div>
+              </div>
+            `;
+
+            container.appendChild(menuItem);
+
+            const minusBtn = menuItem.querySelector(".minus-btn");
+            const plusBtn = menuItem.querySelector(".plus-btn");
+            const addToCartBtn = menuItem.querySelector(".add-to-cart");
+
+            minusBtn.addEventListener("click", (e) => {
+              e.stopPropagation();
+              this.adjustQuantity(item.id, -1);
+            });
+
+            plusBtn.addEventListener("click", (e) => {
+              e.stopPropagation();
+              this.adjustQuantity(item.id, 1);
+            });
+
+            addToCartBtn.addEventListener("click", (e) => {
+              e.stopPropagation();
+              this.addItemToCart(item.id);
+            });
+          });
+
+          container.addEventListener("click", (e) => {
+            const menuItem = e.target.closest(".menu-item");
+            if (menuItem) {
+              const itemId = parseInt(menuItem.dataset.id);
+              this.addItemToCart(itemId);
+            }
+          });
+        },
+
+        filterMenuByCategory: function (category) {
+          this.currentCategory = category;
+          this.loadMenuItems();
+          this.setActiveCategoryButton(category);
+        },
+
+        adjustQuantity: function (itemId, change) {
+          const quantityElement = document.getElementById(`quantity-${itemId}`);
+          let quantity = parseInt(quantityElement.textContent);
+
+          quantity += change;
+          if (quantity < 0) quantity = 0;
+
+          quantityElement.textContent = quantity;
+
+          const cartItemIndex = this.cart.findIndex(
+            (item) => item.id === itemId
+          );
+          if (cartItemIndex !== -1) {
+            if (quantity === 0) {
+              this.cart.splice(cartItemIndex, 1);
+            } else {
+              this.cart[cartItemIndex].quantity = quantity;
+            }
+            this.updateOrderSummary();
+            this.updateCartCount();
+          }
+        },
+
+        addItemToCart: function (itemId) {
+          const quantityElement = document.getElementById(`quantity-${itemId}`);
+          let quantity = parseInt(quantityElement.textContent);
+
+          if (quantity === 0) {
+            quantity = 1;
+            quantityElement.textContent = quantity;
+          }
+
+          const menuItem = this.menuItems.find((item) => item.id === itemId);
+          const cartItemIndex = this.cart.findIndex(
+            (item) => item.id === itemId
+          );
+
+          if (cartItemIndex !== -1) {
+            this.cart[cartItemIndex].quantity = quantity;
+          } else {
+            this.cart.push({
+              id: menuItem.id,
+              name: menuItem.name,
+              price: menuItem.price,
+              quantity: quantity,
+              image: menuItem.image,
+              category: menuItem.category,
+            });
+          }
+
+          const addButton = document.querySelector(
+            `.add-to-cart[data-id="${itemId}"]`
+          );
+          if (addButton) {
+            addButton.innerHTML = '<i class="fas fa-check"></i> Added';
+            addButton.classList.add("added");
+
+            setTimeout(() => {
+              addButton.innerHTML =
+                '<i class="fas fa-cart-plus"></i> Add to Cart';
+              addButton.classList.remove("added");
+            }, 1500);
+          }
+
+          this.updateOrderSummary();
+          this.updateCartCount();
+        },
+
+        updateOrderSummary: function () {
+          const cartItemsContainer = document.getElementById("cart-items");
+          const totalAmountElement = document.getElementById("total-amount");
+          const placeOrderBtn = document.getElementById("place-order-btn");
+
+          let total = 0;
+
+          if (this.cart.length === 0) {
+            cartItemsContainer.innerHTML = `
+              <div class="empty-cart">
+                <i class="fas fa-shopping-cart"></i>
+                <h4>Your cart is empty</h4>
+                <p>Add items from the menu to get started</p>
+              </div>
+            `;
+            placeOrderBtn.disabled = true;
+          } else {
+            let cartHTML = "";
+
+            this.cart.forEach((item, index) => {
+              const itemTotal = item.price * item.quantity;
+              total += itemTotal;
+
+              cartHTML += `
+                <div class="cart-item">
+                  <div class="cart-item-details">
+                    <div class="cart-item-name">
+                      <img src="${item.image}" alt="${
+                item.name
+              }" class="cart-item-image">
+                      ${item.name}
+                      <span class="cart-item-quantity">x${item.quantity}</span>
+                    </div>
+                    <div class="cart-item-price">$${itemTotal.toFixed(2)}</div>
+                  </div>
+                  <div class="cart-item-actions">
+                    <button class="cart-item-btn cart-increase" data-index="${index}">
+                      <i class="fas fa-plus"></i>
+                    </button>
+                    <button class="cart-item-btn cart-decrease" data-index="${index}">
+                      <i class="fas fa-minus"></i>
+                    </button>
+                    <button class="cart-item-btn cart-remove" data-index="${index}">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
+                </div>
+              `;
+            });
+
+            cartItemsContainer.innerHTML = cartHTML;
+            placeOrderBtn.disabled = false;
+
+            document.querySelectorAll(".cart-increase").forEach((btn) => {
+              btn.addEventListener("click", (e) => {
+                const index = parseInt(
+                  e.target.closest(".cart-increase").dataset.index
+                );
+                this.cart[index].quantity++;
+                this.updateOrderSummary();
+                this.updateCartCount();
+              });
+            });
+
+            document.querySelectorAll(".cart-decrease").forEach((btn) => {
+              btn.addEventListener("click", (e) => {
+                const index = parseInt(
+                  e.target.closest(".cart-decrease").dataset.index
+                );
+                if (this.cart[index].quantity > 1) {
+                  this.cart[index].quantity--;
+                } else {
+                  this.cart.splice(index, 1);
+                }
+                this.updateOrderSummary();
+                this.updateCartCount();
+              });
+            });
+
+            document.querySelectorAll(".cart-remove").forEach((btn) => {
+              btn.addEventListener("click", (e) => {
+                const index = parseInt(
+                  e.target.closest(".cart-remove").dataset.index
+                );
+                this.cart.splice(index, 1);
+                this.updateOrderSummary();
+                this.updateCartCount();
+              });
+            });
+          }
+
+          totalAmountElement.textContent = `$${total.toFixed(2)}`;
+          this.saveToStorage();
+        },
+
+        updateCartCount: function () {
+          const totalItems = this.cart.reduce(
+            (sum, item) => sum + item.quantity,
+            0
+          );
+          const badge = document.querySelector(".cart-count-badge");
+          if (badge) {
+            badge.textContent = totalItems;
+            badge.style.display = totalItems > 0 ? "inline-block" : "none";
+          }
+        },
+
+        extractQRCodeData: function () {
+          const urlParams = new URLSearchParams(window.location.search);
+          const tableFromQR = urlParams.get("table");
+
+          if (tableFromQR) {
+            this.currentTable = tableFromQR;
+          } else {
+            const tables = [
+              "01",
+              "02",
+              "03",
+              "04",
+              "05",
+              "06",
+              "07",
+              "08",
+              "09",
+              "10",
+              "11",
+              "12",
+              "13",
+              "14",
+              "15",
+              "16",
+              "17",
+              "18",
+              "19",
+              "20",
+            ];
+            this.currentTable =
+              tables[Math.floor(Math.random() * tables.length)];
+          }
+
+          document.getElementById("table-number").textContent =
+            this.currentTable;
+          document.getElementById("current-token").textContent = "---";
+          document.getElementById("token-display").style.display = "flex";
+        },
+
+        setupEventListeners: function () {
+          // Navigation buttons
+          document.querySelectorAll(".nav-btn").forEach((btn) => {
+            btn.addEventListener("click", (e) => {
+              const section = e.target.closest(".nav-btn").dataset.section;
+              this.showSection(section);
+            });
+          });
+
+          // Category filter buttons
+          document.querySelectorAll(".category-btn").forEach((btn) => {
+            btn.addEventListener("click", (e) => {
+              const category =
+                e.target.closest(".category-btn").dataset.category;
+              this.filterMenuByCategory(category);
+            });
+          });
+
+          // Order buttons
+          document
+            .getElementById("place-order-btn")
+            .addEventListener("click", () => this.placeOrder());
+          document
+            .getElementById("cancel-order-btn")
+            .addEventListener("click", () => this.cancelOrder());
+
+          // Modal buttons
+          document
+            .getElementById("continue-ordering-btn")
+            .addEventListener("click", () => this.continueOrdering());
+          document
+            .getElementById("print-summary-btn")
+            .addEventListener("click", () => this.printBill());
+
+          // Close modals when clicking outside
+          document.querySelectorAll(".modal-overlay").forEach((modal) => {
+            modal.addEventListener("click", (e) => {
+              if (e.target === modal) {
+                modal.style.display = "none";
+              }
+            });
+          });
+        },
+
+        placeOrder: function () {
+          if (this.cart.length === 0) return;
+
+          const instructions = document.getElementById(
+            "special-instructions"
+          ).value;
+          let total = 0;
+          this.cart.forEach((item) => {
+            total += item.price * item.quantity;
+          });
+
+          // Get or create dashboard database
+          let restaurantDatabase = localStorage.getItem("restaurantDatabase");
+          let db = {
+            version: "1.0",
+            lastUpdated: new Date().toISOString(),
+            orders: [],
+            history: [],
+            allTimeHistory: [],
+            settings: {
+              tables: [],
+              qrCodePath: "menu.html",
+              restaurantName: "QR Restaurant Ordering",
+            },
+            tokenCounter: 1000,
+          };
+
+          if (restaurantDatabase) {
+            try {
+              db = JSON.parse(restaurantDatabase);
+            } catch (error) {
+              console.error("Error parsing database:", error);
+            }
+          }
+
+          // Generate token using dashboard's token counter
+          const token = db.tokenCounter.toString();
+
+          const order = {
+            token: token,
+            table: this.currentTable,
+            items: this.cart.map((item) => ({
+              id: item.id,
+              name: item.name,
+              price: item.price,
+              quantity: item.quantity,
+              image: item.image,
+              category: item.category,
+            })),
+            total: total,
+            instructions: instructions,
+            time: new Date().toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            date: new Date().toISOString().split("T")[0],
+            timestamp: new Date().getTime(),
+            status: "Order Placed",
+            source: "menu.html",
+          };
+
+          // Add to orders and allTimeHistory
+          if (!db.orders) db.orders = [];
+          db.orders.push(order);
+
+          if (!db.allTimeHistory) db.allTimeHistory = [];
+          db.allTimeHistory.push({ ...order, archived: false });
+
+          // Increment token counter
+          db.tokenCounter++;
+          db.lastUpdated = new Date().toISOString();
+
+          // Save to dashboard database
+          localStorage.setItem("restaurantDatabase", JSON.stringify(db));
+
+          // Update current token display
+          this.currentToken = token;
+          document.getElementById("current-token").textContent = token;
+          this.isOrderPlaced = true;
+
+          // Show order confirmation
+          this.showOrderConfirmation(order);
+
+          // Clear cart and update UI
+          this.cart = [];
+          document.querySelectorAll(".quantity").forEach((qty) => {
+            qty.textContent = "0";
+          });
+          document.getElementById("special-instructions").value = "";
+          this.updateOrderSummary();
+          this.updateCartCount();
+          this.saveToStorage();
+
+          // Notify dashboard system
+          this.notifyDashboard(order);
+
+          // Show sync status
+          this.showSyncStatus(
+            `Order #${token} synced with dashboard!`,
+            "success"
+          );
+        },
+
+        notifyDashboard: function (order) {
+          // Create pending orders storage for dashboard to pick up
+          let pendingOrders = localStorage.getItem("menuPendingOrders");
+          if (!pendingOrders) {
+            pendingOrders = [];
+          } else {
+            pendingOrders = JSON.parse(pendingOrders);
+          }
+
+          pendingOrders.push(order);
+          localStorage.setItem(
+            "menuPendingOrders",
+            JSON.stringify(pendingOrders)
+          );
+
+          // Also update menu database
+          this.updateMenuDatabase(order);
+        },
+
+        updateMenuDatabase: function (order) {
+          let menuDatabase = localStorage.getItem("menuDatabase");
+          if (!menuDatabase) {
+            menuDatabase = {
+              version: "1.0",
+              orders: [],
+              menuItems: this.menuItems,
+              settings: {
+                restaurantName: "QR Restaurant Menu",
+              },
+            };
+          } else {
+            menuDatabase = JSON.parse(menuDatabase);
+          }
+
+          // Add order to menu database
+          if (!menuDatabase.orders) menuDatabase.orders = [];
+          menuDatabase.orders.push(order);
+
+          localStorage.setItem("menuDatabase", JSON.stringify(menuDatabase));
+        },
+
+        showOrderConfirmation: function (order) {
+          document.getElementById("modal-token").textContent = order.token;
+
+          let itemsHTML = "";
+          order.items.forEach((item) => {
+            const itemTotal = item.price * item.quantity;
+            itemsHTML += `
+              <div class="modal-detail-item" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed #ddd;">
+                <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+                  <img src="${item.image}" 
+                       alt="${item.name}" 
+                       style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover; border: 1px solid #eee;">
+                  <div>
+                    <div style="font-weight: 600; color: #2c3e50;">${
+                      item.name
+                    }</div>
+                    <div style="font-size: 13px; color: #666;">Quantity: ${
+                      item.quantity
+                    }</div>
+                  </div>
+                </div>
+                <div style="font-weight: 700; color: #e74c3c; min-width: 80px; text-align: right;">
+                  $${itemTotal.toFixed(2)}
+                </div>
+              </div>
+            `;
+          });
+
+          const tax = order.total * 0.1;
+          const grandTotal = order.total + tax;
+
+          const orderDetailsHTML = `
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid #ddd;">
+              <div class="modal-detail-item">
+                <span>Table Number:</span>
+                <strong>${order.table}</strong>
+              </div>
+              <div class="modal-detail-item">
+                <span>Order Time:</span>
+                <strong>${order.time}</strong>
+              </div>
+              <div class="modal-detail-item" style="border-top: 1px solid #eee; margin-top: 10px; padding-top: 10px;">
+                <span>Subtotal:</span>
+                <strong>$${order.total.toFixed(2)}</strong>
+              </div>
+              <div class="modal-detail-item">
+                <span>Tax (10%):</span>
+                <strong>$${tax.toFixed(2)}</strong>
+              </div>
+              <div class="modal-detail-item" style="border-top: 2px solid #ddd; margin-top: 10px; padding-top: 15px;">
+                <span style="font-size: 18px; font-weight: 800;">Total Amount:</span>
+                <strong style="font-size: 18px; color: #e74c3c; font-weight: 800;">$${grandTotal.toFixed(
+                  2
+                )}</strong>
+              </div>
+              ${
+                order.instructions
+                  ? `
+              <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
+                <div style="font-weight: 600; margin-bottom: 5px; color: #2c3e50;">Special Instructions:</div>
+                <div style="color: #666; font-size: 14px; background: #f8f9fa; padding: 10px; border-radius: 5px;">${order.instructions}</div>
+              </div>
+              `
+                  : ""
+              }
+            </div>
+          `;
+
+          document.getElementById("order-details").innerHTML = `
+            <div style="margin-bottom: 20px;">
+              <div style="font-weight: 600; margin-bottom: 15px; color: #2c3e50; font-size: 18px; padding-bottom: 10px; border-bottom: 2px solid #eee;">Order Items</div>
+              ${itemsHTML}
+            </div>
+            ${orderDetailsHTML}
+          `;
+
+          document.getElementById("order-modal").style.display = "flex";
+        },
+
+        continueOrdering: function () {
+          document.getElementById("order-modal").style.display = "none";
+          this.showSection("cart");
+        },
+
+        cancelOrder: function () {
+          if (this.cart.length === 0) {
+            alert("There is no order to cancel.");
+            return;
+          }
+
+          if (
+            confirm(
+              "Are you sure you want to cancel your current order? All items will be removed from your cart."
+            )
+          ) {
+            this.cart = [];
+            document.querySelectorAll(".quantity").forEach((qty) => {
+              qty.textContent = "0";
+            });
+            document.getElementById("special-instructions").value = "";
+            this.updateOrderSummary();
+            this.updateCartCount();
+            alert("Order cancelled successfully.");
+          }
+        },
+
+        printBill: function () {
+          const modalToken = document.getElementById("modal-token").textContent;
+          const orderDetails =
+            document.getElementById("order-details").innerHTML;
+
+          this.printReceipt(modalToken, orderDetails);
+        },
+
+        printReceipt: function (token, details) {
+          const billContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <title>Restaurant Bill - ${token}</title>
+              <style>
+                body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+                .bill { max-width: 500px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
+                .header { text-align: center; margin-bottom: 25px; padding-bottom: 20px; border-bottom: 2px dashed #2c3e50; }
+                .header h2 { color: #2c3e50; margin-bottom: 10px; font-size: 28px; }
+                .header p { color: #666; margin: 5px 0; }
+                .token { font-size: 24px; font-weight: bold; text-align: center; margin: 25px 0; padding: 15px; background: linear-gradient(135deg, #f8f9fa, #e9ecef); border-radius: 10px; border: 2px dashed #2c3e50; letter-spacing: 2px; }
+                .details { margin: 25px 0; }
+                .item-row { display: flex; justify-content: space-between; align-items: center; margin: 12px 0; padding-bottom: 12px; border-bottom: 1px dashed #ddd; }
+                .item-info { display: flex; align-items: center; gap: 12px; flex: 1; }
+                .item-image { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; border: 1px solid #eee; }
+                .item-name { font-weight: 600; color: #2c3e50; }
+                .item-quantity { font-size: 13px; color: #666; }
+                .item-price { font-weight: 700; color: #e74c3c; min-width: 80px; text-align: right; }
+                .total-section { margin-top: 25px; padding-top: 20px; border-top: 2px solid #2c3e50; }
+                .total-row { display: flex; justify-content: space-between; margin: 10px 0; padding: 8px 0; }
+                .grand-total { font-size: 22px; font-weight: 800; color: #e74c3c; margin-top: 15px; padding-top: 15px; border-top: 2px dashed #2c3e50; }
+                .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px dashed #ddd; color: #666; font-style: italic; }
+                @media print { 
+                  body { margin: 0; padding: 10px; background: white; }
+                  .no-print { display: none; }
+                  .bill { border: none; box-shadow: none; padding: 15px; }
+                }
+              </style>
+            </head>
+            <body>
+              <div class="bill">
+                <div class="header">
+                  <h2>QR Restaurant Ordering</h2>
+                  <p>123 Food Street, City</p>
+                  <p>Phone: (123) 456-7890</p>
+                  <p>Printed: ${new Date().toLocaleDateString()}</p>
+                </div>
+                <div class="token">Token: ${token}</div>
+                <div class="details" id="print-details"></div>
+                <div class="footer">
+                  <p>Thank you for dining with us!</p>
+                  <p>Printed: ${new Date().toLocaleString()}</p>
+                </div>
+                <div class="no-print" style="margin-top: 30px; text-align: center;">
+                  <button onclick="window.print()" style="padding: 12px 30px; background: #2c3e50; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600;">Print Bill</button>
+                  <button onclick="window.close()" style="padding: 12px 30px; background: #e74c3c; color: white; border: none; border-radius: 8px; cursor: pointer; margin-left: 15px; font-size: 16px; font-weight: 600;">Close</button>
+                </div>
+              </div>
+              <script>
+                document.getElementById('print-details').innerHTML = \`${details}\`;
+                setTimeout(() => window.print(), 500);
+              <\/script>
+            </body>
+            </html>
+          `;
+
+          const printWindow = window.open("", "_blank");
+          printWindow.document.write(billContent);
+          printWindow.document.close();
+          printWindow.focus();
+        },
+
+        saveToStorage: function () {
+          const cartData = {
+            cart: this.cart,
+            table: this.currentTable,
+            token: this.currentToken,
+          };
+          localStorage.setItem("menuSession", JSON.stringify(cartData));
+        },
+
+        loadFromStorage: function () {
+          const savedSession = localStorage.getItem("menuSession");
+          if (savedSession) {
+            const data = JSON.parse(savedSession);
+            if (data.table === this.currentTable) {
+              this.cart = data.cart || [];
+              this.cart.forEach((item) => {
+                const quantityElement = document.getElementById(
+                  `quantity-${item.id}`
+                );
+                if (quantityElement) {
+                  quantityElement.textContent = item.quantity;
+                }
+              });
+              this.updateOrderSummary();
+              this.updateCartCount();
+            }
+          }
+        },
+
+        syncWithDashboard: function () {
+          // Initialize dashboard database if not exists
+          let restaurantDatabase = localStorage.getItem("restaurantDatabase");
+          if (!restaurantDatabase) {
+            restaurantDatabase = {
+              version: "1.0",
+              lastUpdated: new Date().toISOString(),
+              orders: [],
+              history: [],
+              allTimeHistory: [],
+              settings: {
+                tables: [
+                  "01",
+                  "02",
+                  "03",
+                  "04",
+                  "05",
+                  "06",
+                  "07",
+                  "08",
+                  "09",
+                  "10",
+                  "11",
+                  "12",
+                  "13",
+                  "14",
+                  "15",
+                  "16",
+                  "17",
+                  "18",
+                  "19",
+                  "20",
+                ],
+                qrCodePath: "menu.html",
+                restaurantName: "QR Restaurant Ordering",
+              },
+              tokenCounter: 1000,
+            };
+            localStorage.setItem(
+              "restaurantDatabase",
+              JSON.stringify(restaurantDatabase)
+            );
+          }
+
+          // Create menu database for dashboard compatibility
+          const menuDatabase = {
+            version: "1.0",
+            orders: [],
+            menuItems: this.menuItems,
+            settings: {
+              restaurantName: "QR Restaurant Menu",
+            },
+          };
+
+          // Load existing orders for this table
+          if (restaurantDatabase) {
+            try {
+              const db = JSON.parse(restaurantDatabase);
+              if (db.allTimeHistory) {
+                const tableOrders = db.allTimeHistory.filter(
+                  (order) =>
+                    order.table === this.currentTable && !order.archived
+                );
+                menuDatabase.orders = tableOrders;
+              }
+            } catch (error) {
+              console.error("Error syncing with dashboard:", error);
+            }
+          }
+
+          localStorage.setItem("menuDatabase", JSON.stringify(menuDatabase));
+        },
+
+        startDashboardSync: function () {
+          // Start polling for status updates from dashboard
+          this.syncInterval = setInterval(() => {
+            this.checkDashboardUpdates();
+          }, 3000); // Check every 3 seconds
+        },
+
+        checkDashboardUpdates: function () {
+          const restaurantDatabase = localStorage.getItem("restaurantDatabase");
+          if (restaurantDatabase) {
+            try {
+              const db = JSON.parse(restaurantDatabase);
+
+              // Update current token display from dashboard
+              if (
+                db.tokenCounter &&
+                db.tokenCounter.toString() !== this.currentToken
+              ) {
+                this.currentToken = db.tokenCounter.toString();
+                document.getElementById("current-token").textContent =
+                  this.currentToken;
+              }
+            } catch (error) {
+              console.error("Error checking dashboard updates:", error);
+            }
+          }
+        },
+
+        showSyncStatus: function (message, type = "success") {
+          const status = document.getElementById("sync-status");
+          const messageElement = document.getElementById("sync-message");
+
+          if (status && messageElement) {
+            status.className = `sync-status ${type}`;
+            messageElement.textContent = message;
+            status.style.display = "flex";
+
+            setTimeout(() => {
+              status.style.display = "none";
+            }, 3000);
+          }
+        },
+      };
+
+      document.addEventListener("DOMContentLoaded", function () {
+        MenuSystem.init();
+      });
+
+      // Make system accessible globally for dashboard
+      window.MenuSystem = MenuSystem;
+    </script>
+  </body>
+</html>
