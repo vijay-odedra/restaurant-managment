@@ -1,3 +1,51 @@
+<?php
+session_start();
+
+/* ================= DB CONNECTION ================= */
+$conn = mysqli_connect("localhost", "root", "", "restaurant_managment");
+if (!$conn) {
+    die("Database Connection Failed");
+}
+
+/* ================= SIGNUP ================= */
+if (isset($_POST["signup"])) {
+    $name  = $_POST["name"];
+    $phone = $_POST["phone"];
+    $email = $_POST["email"];
+    $pass  = password_hash($_POST["password"], PASSWORD_DEFAULT);
+
+    $check = mysqli_query($conn, "SELECT * FROM users WHERE email='$email'");
+    if (mysqli_num_rows($check) == 0) {
+        mysqli_query($conn,
+            "INSERT INTO users (name, phone, email, password)
+             VALUES ('$name','$phone','$email','$pass')"
+        );
+        echo "<script>alert('Signup successful! Please login.');</script>";
+    } else {
+        echo "<script>alert('Email already exists');</script>";
+    }
+}
+
+/* ================= LOGIN ================= */
+if (isset($_POST["login"])) {
+    $email = $_POST["email"];
+    $pass  = $_POST["password"];
+
+    $sql = mysqli_query($conn, "SELECT * FROM users WHERE email='$email'");
+    if (mysqli_num_rows($sql) == 1) {
+        $row = mysqli_fetch_assoc($sql);
+        if (password_verify($pass, $row["password"])) {
+            $_SESSION["user"] = $row["email"];
+            header("Location: index.html");
+            exit;
+        }
+    }
+    echo "<script>alert('Invalid login details');</script>";
+}
+?>
+
+
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
